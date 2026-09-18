@@ -403,7 +403,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: Image.asset(
-                                'assets/images/google_icon.jpg',
+                                'assets/images/google_logo.png',
                                 height: 22,
                                 width: 22,
                                 fit: BoxFit.contain,

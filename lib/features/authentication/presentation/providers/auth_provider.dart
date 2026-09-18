@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/errors/network_exception.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -14,6 +15,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 // GoogleSignIn Instance Provider
 final googleSignInProvider = Provider<GoogleSignIn>((ref) {
   return GoogleSignIn(
+    serverClientId: AppConstants.googleServerClientId,
     scopes: ['email', 'profile'],
   );
 });
@@ -27,7 +29,31 @@ final authStateProvider =
 class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
   @override
   AsyncValue<UserModel?> build() {
-    return const AsyncValue.data(null);
+    // Initial state check
+    _checkInitialSession();
+    return const AsyncValue.loading();
+  }
+
+  Future<void> _checkInitialSession() async {
+    try {
+      final isAuth = await _authRepository.isAuthenticated();
+      if (isAuth) {
+        final cachedUser = await _authRepository.getCachedUser();
+        state = AsyncValue.data(cachedUser);
+
+        // Background refresh profile from /api/mobile/auth/me if available
+        try {
+          final refreshedUser = await _authRepository.getMe();
+          state = AsyncValue.data(refreshedUser);
+        } catch (_) {
+          // If /api/mobile/auth/me is down or unconfigured, cached user remains valid
+        }
+      } else {
+        state = const AsyncValue.data(null);
+      }
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
   }
 
   AuthRepository get _authRepository => ref.read(authRepositoryProvider);
@@ -60,8 +86,16 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
 
       // 3. Authenticate with backend: POST /api/mobile/auth/google
       final authResponse = await _authRepository.loginWithGoogle(idToken);
-
       state = AsyncValue.data(authResponse.user);
+
+      // 4. Optionally verify with /api/mobile/auth/me in background
+      try {
+        final meUser = await _authRepository.getMe();
+        state = AsyncValue.data(meUser);
+      } catch (e) {
+        AppLogger.w('Background /api/mobile/auth/me call skipped/failed: $e', 'AUTH');
+      }
+
       return authResponse;
     } on NetworkException catch (e, st) {
       AppLogger.e('Google Sign-In backend verification failed', e, st, 'AUTH');

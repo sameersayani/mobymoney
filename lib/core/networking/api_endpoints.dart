@@ -1,6 +1,5 @@
 abstract class ApiEndpoints {
   // Auth
   static const String googleAuth = '/api/mobile/auth/google';
-  
-  // Future endpoints can be appended here
+  static const String authMe = '/api/mobile/auth/me';
 }

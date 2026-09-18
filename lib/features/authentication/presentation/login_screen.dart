@@ -5,6 +5,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
 import 'package:mobymoney/features/authentication/presentation/widgets/custom_text_field.dart';
+import 'package:mobymoney/features/home/presentation/home_screen.dart';
 import 'package:mobymoney/shared/widgets/brand_logo_title.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -55,6 +56,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (response != null) {
       _showSuccessFeedback('Welcome, ${response.user.name}!');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
     } else {
       final state = ref.read(authStateProvider);
       if (state.hasError) {

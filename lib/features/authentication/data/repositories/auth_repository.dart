@@ -4,6 +4,7 @@ import '../../../../core/networking/api_client.dart';
 import '../../../../core/networking/api_endpoints.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../domain/models/auth_response_model.dart';
+import '../../domain/models/user_model.dart';
 
 class AuthRepository {
   AuthRepository({
@@ -37,6 +38,40 @@ class AuthRepository {
     } catch (e) {
       throw NetworkException(message: 'Failed to authenticate: ${e.toString()}');
     }
+  }
+
+  /// Fetch current authenticated user details from GET /api/mobile/auth/me
+  Future<UserModel> getMe() async {
+    try {
+      final response = await _apiClient.dio.get(ApiEndpoints.authMe);
+      final dynamic data = response.data;
+      Map<String, dynamic> userMap = {};
+
+      if (data is Map<String, dynamic>) {
+        if (data.containsKey('user') && data['user'] is Map<String, dynamic>) {
+          userMap = data['user'] as Map<String, dynamic>;
+        } else {
+          userMap = data;
+        }
+      }
+
+      final user = UserModel.fromJson(userMap);
+      await _storageService.saveUserData(user.toJson());
+      return user;
+    } on DioException catch (e) {
+      throw NetworkException.fromDioException(e);
+    } catch (e) {
+      throw NetworkException(message: 'Failed to load user profile: ${e.toString()}');
+    }
+  }
+
+  /// Retrieve cached user data from secure storage
+  Future<UserModel?> getCachedUser() async {
+    final map = await _storageService.getUserData();
+    if (map != null) {
+      return UserModel.fromJson(map);
+    }
+    return null;
   }
 
   /// Check if user has active session

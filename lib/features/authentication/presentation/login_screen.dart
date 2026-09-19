@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:mobymoney/core/routing/app_router.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
+import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
 import 'package:mobymoney/features/authentication/presentation/widgets/custom_text_field.dart';
-import 'package:mobymoney/features/home/presentation/home_screen.dart';
 import 'package:mobymoney/shared/widgets/brand_logo_title.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -31,18 +33,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  void _handleEmailSignIn() async {
+  void _handleEmailSignIn() {
     if (_isFormSubmitting) return; // Duplicate-tap guard
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isFormSubmitting = true);
+    setState(() => _isFormSubmitting = true);
 
-      await Future.delayed(const Duration(milliseconds: 1200));
-
-      if (mounted) {
-        setState(() => _isFormSubmitting = false);
-        _showSuccessFeedback('Signed in successfully');
-      }
-    }
+    _showSuccessFeedback('Signed in successfully');
+    context.go(AppRoutes.home);
   }
 
   void _handleGoogleSignIn() async {
@@ -56,9 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (response != null) {
       _showSuccessFeedback('Welcome, ${response.user.name}!');
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      context.go(AppRoutes.home);
     } else {
       final state = ref.read(authStateProvider);
       if (state.hasError) {
@@ -68,65 +62,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _showSuccessFeedback(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        content: Row(
-          children: [
-            const PhosphorIcon(
-              PhosphorIconsRegular.checkCircle,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                message,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    AppSnackBar.showSuccess(context, message);
   }
 
   void _showErrorFeedback(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        content: Row(
-          children: [
-            const PhosphorIcon(
-              PhosphorIconsRegular.warningCircle,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                message,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    AppSnackBar.showError(context, message);
   }
 
   @override
@@ -205,15 +145,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   hintText: 'name@company.com',
                   prefixIcon: PhosphorIconsRegular.envelopeSimple,
                   keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!value.contains('@') || !value.contains('.')) {
-                      return 'Please enter a valid email address';
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 20),
 
@@ -237,54 +168,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       setState(() => _obscurePassword = !_obscurePassword);
                     },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 14),
 
                 // Remember Me & Forgot Password Row
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: Checkbox(
-                        value: _rememberMe,
-                        activeColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        side: const BorderSide(
-                          color: AppColors.slate400,
-                          width: 1.5,
-                        ),
-                        onChanged: (val) {
-                          setState(() => _rememberMe = val ?? false);
-                        },
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: Checkbox(
+                              value: _rememberMe,
+                              activeColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              side: const BorderSide(
+                                color: AppColors.slate400,
+                                width: 1.5,
+                              ),
+                              onChanged: (val) {
+                                setState(() => _rememberMe = val ?? false);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() => _rememberMe = !_rememberMe);
+                              },
+                              child: Text(
+                                'Remember me',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.slate700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() => _rememberMe = !_rememberMe);
-                      },
-                      child: Text(
-                        'Remember me',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.slate700,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
                     TextButton(
                       onPressed: () {},
                       style: TextButton.styleFrom(
@@ -460,7 +394,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () {},
+                        onTap: () {
+                          context.push(AppRoutes.register);
+                        },
                         child: Text(
                           'Create account',
                           style: GoogleFonts.inter(

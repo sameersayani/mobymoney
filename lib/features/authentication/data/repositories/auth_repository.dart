@@ -28,7 +28,7 @@ class AuthRepository {
         response.data as Map<String, dynamic>,
       );
 
-      // Persist access token & user profile securely
+      // Persist the backend API access token & user profile securely
       await _storageService.saveAccessToken(authResponse.accessToken);
       await _storageService.saveUserData(authResponse.user.toJson());
 

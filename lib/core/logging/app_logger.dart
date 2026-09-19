@@ -1,45 +1,91 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:logger/logger.dart';
+import 'talker.dart';
 
-abstract class AppLogger {
-  // ANSI Colors for IDE terminals
-  static const String _reset = '\x1B[0m';
-  static const String _cyan = '\x1B[36m';
-  static const String _green = '\x1B[32m';
-  static const String _yellow = '\x1B[33m';
-  static const String _red = '\x1B[31m';
-  static const String _magenta = '\x1B[35m';
+class AppLogger {
+  static final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 5,
+      lineLength: 80,
+      colors: true,
+      printEmojis: true,
+      dateTimeFormat: DateTimeFormat.dateAndTime,
+    ),
+  );
 
-  static void d(String message, [String tag = 'DEBUG']) {
-    if (!kDebugMode) return;
-    debugPrint('$_cyan🔍 [$tag] $message$_reset');
+  static void debug(String message, [dynamic error, StackTrace? stackTrace]) {
+    talker.debug(message, error, stackTrace);
+    if (kDebugMode) {
+      _logger.d(message, error: error, stackTrace: stackTrace);
+    }
   }
 
-  static void i(String message, [String tag = 'INFO']) {
-    if (!kDebugMode) return;
-    debugPrint('$_cyan💡 [$tag] $message$_reset');
+  static void info(String message, [dynamic error, StackTrace? stackTrace]) {
+    talker.info(message, error, stackTrace);
+    if (kDebugMode) {
+      _logger.i(message, error: error, stackTrace: stackTrace);
+    }
   }
 
-  static void s(String message, [String tag = 'SUCCESS']) {
-    if (!kDebugMode) return;
-    debugPrint('$_green✅ [$tag] $message$_reset');
+  static void warning(String message, [dynamic error, StackTrace? stackTrace]) {
+    talker.warning(message, error, stackTrace);
+    if (kDebugMode) {
+      _logger.w(message, error: error, stackTrace: stackTrace);
+    }
   }
 
-  static void w(String message, [String tag = 'WARN']) {
-    if (!kDebugMode) return;
-    debugPrint('$_yellow⚠️ [$tag] $message$_reset');
+  static void error(String message, [dynamic error, StackTrace? stackTrace]) {
+    talker.error(message, error, stackTrace);
+    if (kDebugMode) {
+      _logger.e(message, error: error, stackTrace: stackTrace);
+    }
   }
 
+  // Short aliases for compatibility
+  static void d(String message, [String tag = 'DEBUG']) => debug('[$tag] $message');
+  static void i(String message, [String tag = 'INFO']) => info('[$tag] $message');
+  static void s(String message, [String tag = 'SUCCESS']) => info('✅ [$tag] $message');
+  static void w(String message, [String tag = 'WARN']) => warning('[$tag] $message');
   static void e(
     String message, [
-    dynamic error,
+    dynamic err,
     StackTrace? stackTrace,
     String tag = 'ERROR',
-  ]) {
-    if (!kDebugMode) return;
-    debugPrint('$_red❌ [$tag] $message$_reset');
-    if (error != null) debugPrint('$_red   Error: $error$_reset');
-    if (stackTrace != null) debugPrint('$_red   Stack: $stackTrace$_reset');
+  ]) =>
+      error('[$tag] $message', err, stackTrace);
+
+  static void network(
+    String message, {
+    String? method,
+    String? url,
+    Map<String, dynamic>? headers,
+    dynamic data,
+    int? statusCode,
+    String? token,
+  }) {
+    final buffer = StringBuffer();
+    if (method != null) buffer.write('[$method] ');
+    buffer.write(message);
+    if (url != null) buffer.write(' - $url');
+    if (statusCode != null) buffer.write(' (Status: $statusCode)');
+
+    talker.info('NETWORK: ${buffer.toString()}');
+
+    if (kDebugMode) {
+      final consoleBuffer = StringBuffer();
+      consoleBuffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      consoleBuffer.writeln('🌐 NETWORK: $message');
+      if (method != null) consoleBuffer.writeln('Method: $method');
+      if (url != null) consoleBuffer.writeln('URL: $url');
+      if (statusCode != null) consoleBuffer.writeln('Status: $statusCode');
+      if (token != null && token.isNotEmpty) consoleBuffer.writeln('Token: $token');
+      if (headers != null) consoleBuffer.writeln('Headers: $headers');
+      if (data != null) consoleBuffer.writeln('Data: ${_formatJson(data)}');
+      consoleBuffer.write('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      _logger.i(consoleBuffer.toString());
+    }
   }
 
   /// 🌐 Pretty Print Network Request
@@ -50,22 +96,14 @@ abstract class AppLogger {
     Map<String, dynamic>? queryParameters,
     dynamic data,
   }) {
-    if (!kDebugMode) return;
-    final buffer = StringBuffer();
-    buffer.writeln('$_magenta┌──────────────────────────────────────────────────────────');
-    buffer.writeln('│ 🌐 $method $url');
-    if (token != null && token.isNotEmpty) {
-      // Printed on one single unbroken line
-      buffer.writeln('│ 🔑 Token: $token');
-    }
-    if (queryParameters != null && queryParameters.isNotEmpty) {
-      buffer.writeln('│ 📥 Params: ${_formatJson(queryParameters)}');
-    }
-    if (data != null) {
-      buffer.writeln('│ 📦 Payload: ${_formatJson(data)}');
-    }
-    buffer.write('└──────────────────────────────────────────────────────────$_reset');
-    debugPrint(buffer.toString());
+    network(
+      'Request Sent',
+      method: method,
+      url: url,
+      token: token,
+      headers: queryParameters != null ? {'params': queryParameters} : null,
+      data: data,
+    );
   }
 
   /// 📥 Pretty Print Network Response
@@ -76,20 +114,13 @@ abstract class AppLogger {
     required int durationMs,
     dynamic responseData,
   }) {
-    if (!kDebugMode) return;
-    final isSuccess = statusCode != null && statusCode >= 200 && statusCode < 300;
-    final color = isSuccess ? _green : _yellow;
-    final icon = isSuccess ? '✅' : '⚠️';
-
-    final buffer = StringBuffer();
-    buffer.writeln('$color┌──────────────────────────────────────────────────────────');
-    buffer.writeln('│ $icon [$statusCode] $method $url');
-    buffer.writeln('│ ⏱️ Response Time: ${durationMs}ms');
-    if (responseData != null) {
-      buffer.writeln('│ 📥 Response: ${_formatJson(responseData)}');
-    }
-    buffer.write('└──────────────────────────────────────────────────────────$_reset');
-    debugPrint(buffer.toString());
+    network(
+      'Response (${durationMs}ms)',
+      method: method,
+      url: url,
+      statusCode: statusCode,
+      data: responseData,
+    );
   }
 
   /// ❌ Pretty Print Network Error
@@ -102,20 +133,10 @@ abstract class AppLogger {
     dynamic errorResponse,
     dynamic rawError,
   }) {
-    if (!kDebugMode) return;
-    final buffer = StringBuffer();
-    buffer.writeln('$_red┌──────────────────────────────────────────────────────────');
-    buffer.writeln('│ ❌ [${statusCode ?? 'ERR'}] $method $url');
-    buffer.writeln('│ ⏱️ Duration: ${durationMs}ms');
-    buffer.writeln('│ 💬 Reason: $errorMessage');
-    if (rawError != null) {
-      buffer.writeln('│ 🔍 Raw Exception: $rawError');
-    }
-    if (errorResponse != null) {
-      buffer.writeln('│ 📥 Error Response: ${_formatJson(errorResponse)}');
-    }
-    buffer.write('└──────────────────────────────────────────────────────────$_reset');
-    debugPrint(buffer.toString());
+    error(
+      '[$statusCode] $method $url (${durationMs}ms) - $errorMessage',
+      errorResponse ?? rawError,
+    );
   }
 
   static String _formatJson(dynamic data) {

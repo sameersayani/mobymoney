@@ -38,9 +38,10 @@ abstract class AppColors {
   static const Color brandTeal = Color(0xFF0D9488); // "money" teal tone
 
   // Backgrounds & Surfaces
-  static const Color background = Color(0xFFF4F7FB);
+  static const Color background = Color(0xFFE2E8F0); // More dark grey background
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceMuted = Color(0xFFF1F4F9);
+  static const Color surfaceMuted = Color(0xFFCBD5E1);
+  static const Color appBarBg = Color(0xFFFFFFFF); // Pure white app bar color
 
   // Input & Field specific
   static const Color inputFieldBg = Color(0xFFEEF2F9);

@@ -1,142 +1,862 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:mobymoney/core/routing/app_router.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
-import 'package:mobymoney/features/authentication/presentation/login_screen.dart';
+import 'package:mobymoney/core/widgets/compact_month_year_picker_dialog.dart';
+import 'package:mobymoney/features/ai_chat/presentation/ai_chat_screen.dart';
+import 'package:mobymoney/features/analytics/presentation/analytics_screen.dart';
 import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
-import 'package:mobymoney/shared/widgets/home_header_app_bar.dart';
+import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
+import 'package:mobymoney/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:mobymoney/features/dashboard/presentation/widgets/add_expense_bottom_sheet.dart';
+import 'package:mobymoney/features/dashboard/presentation/widgets/dashboard_header_app_bar.dart';
+import 'package:mobymoney/features/dashboard/presentation/widgets/recent_expense_tile.dart';
+import 'package:mobymoney/features/dashboard/presentation/widgets/spending_trends_widget.dart';
+import 'package:mobymoney/features/expenses/presentation/expenses_screen.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int _currentNavIndex = 0;
+  DateTime _selectedDate = DateTime.now();
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      return 'Good morning';
+    } else if (hour >= 12 && hour < 17) {
+      return 'Good afternoon';
+    } else if (hour >= 17 && hour < 21) {
+      return 'Good evening';
+    } else {
+      return 'Good night';
+    }
+  }
+
+  String _getUserDisplayName(String? fullName) {
+    if (fullName == null || fullName.trim().isEmpty) return 'Alex Morgan';
+    return fullName.trim();
+  }
+
+  void _pickDate(BuildContext context) async {
+    final picked = await CompactMonthYearPickerDialog.show(
+      context,
+      initialDate: _selectedDate,
+    );
+
+    if (picked != null && picked != _selectedDate) {
+      setState(() => _selectedDate = picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final user = authState.asData?.value;
+    final dashboardAsync = ref.watch(dashboardSummaryProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: HomeHeaderAppBar(
-        user: user,
-        onAvatarTap: () {
-          _showProfileBottomSheet(context, ref, user);
-        },
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Placeholder welcome card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.slate200),
+      backgroundColor: AppColors.background,
+      appBar: _currentNavIndex == 0
+          ? DashboardHeaderAppBar(
+              user: user,
+              onAvatarTap: () {
+                context.push(AppRoutes.settings);
+              },
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: _currentNavIndex <= 2
+          ? FloatingActionButton.extended(
+              onPressed: () => AddExpenseBottomSheet.show(context),
+              backgroundColor: AppColors.primary,
+              elevation: 4,
+              icon: const PhosphorIcon(
+                PhosphorIconsRegular.plusCircle,
+                color: Colors.white,
+                size: 20,
+              ),
+              label: Text(
+                'Add Expense',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 0.2,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const PhosphorIcon(
-                          PhosphorIconsRegular.wallet,
-                          color: AppColors.primary,
-                          size: 24,
+              ),
+            )
+          : null,
+      body: _buildCurrentTabBody(dashboardAsync, user),
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildCurrentTabBody(
+    AsyncValue<DashboardSummaryModel> dashboardAsync,
+    dynamic user,
+  ) {
+    switch (_currentNavIndex) {
+      case 1:
+        return const ExpensesScreen();
+      case 2:
+        return const AnalyticsScreen();
+      case 3:
+        return const AiChatScreen();
+      default:
+        return _buildHomeDashboard(dashboardAsync, user);
+    }
+  }
+
+  Widget _buildHomeDashboard(
+    AsyncValue<DashboardSummaryModel> dashboardAsync,
+    dynamic user,
+  ) {
+    return dashboardAsync.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+        ),
+      ),
+      error: (err, stack) => Center(
+        child: Text(
+          err.toString(),
+          style: GoogleFonts.inter(color: AppColors.error),
+        ),
+      ),
+      data: (summary) {
+        final greeting = _getGreeting();
+        final displayName = _getUserDisplayName(user?.name);
+        final formattedSelectedMonth =
+            DateFormat('MMM yyyy').format(_selectedDate);
+
+        return RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async {
+            await ref.read(dashboardSummaryProvider.notifier).refresh();
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                  // 1. Top Greeting & Date Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Greeting above, Name below
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  greeting,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.slate500,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Text('👋',
+                                    style: TextStyle(fontSize: 13)),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.4,
+                                color: AppColors.neutralDark,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Total Balance',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.slate600,
+                      ),
+
+                      // Interactive Premium Calendar Button
+                      GestureDetector(
+                        onTap: () => _pickDate(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.18),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryContainer,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const PhosphorIcon(
+                                  PhosphorIconsRegular.calendarBlank,
+                                  color: AppColors.primary,
+                                  size: 14,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                formattedSelectedMonth,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.neutralDark,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const PhosphorIcon(
+                                PhosphorIconsRegular.caretDown,
+                                color: AppColors.slate500,
+                                size: 12,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // 2. Hero Card: Total Spending & Budget Left
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF0F766E),
+                          Color(0xFF115E59),
+                          Color(0xFF0F766E),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '₹ 0.00',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.neutralDark,
-                        letterSpacing: -0.5,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'TOTAL SPENDING',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                color: const Color(0xFFCCFBF1),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                summary.activePeriodLabel,
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  '₹48,250',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.8,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const PhosphorIcon(
+                                    PhosphorIconsRegular.arrowDown,
+                                    color: Colors.white,
+                                    size: 13,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    '12% vs last mo',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(color: Colors.white24, height: 1),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            // Daily Avg
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'DAILY AVERAGE',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.6,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    RichText(
+                                      text: TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: '₹1,556',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text: '/day',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 11,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            // Budget Left
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Budget Left',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                        Text(
+                                          '₹16,750',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: const LinearProgressIndicator(
+                                        value: 0.74,
+                                        minHeight: 4,
+                                        backgroundColor: Colors.white24,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Color(0xFF6EE7B7),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '₹48,250 of ₹65,000 cap',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 9,
+                                        color: Colors.white60,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 3. Essential vs Discretionary Ratio Cards
+                  Row(
+                    children: [
+                      // Essential
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.slate400
+                                    .withValues(alpha: 0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                            border:
+                                Border.all(color: const Color(0xFFF1F5F9)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.tertiary,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'Essential',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.slate600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.tertiaryContainer,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '75%',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.tertiaryDark,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                '₹36,400',
+                                style: GoogleFonts.inter(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.neutralDark,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Fixed bills, food & commute',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: AppColors.slate400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Discretionary
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.slate400
+                                    .withValues(alpha: 0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                            border:
+                                Border.all(color: const Color(0xFFF1F5F9)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.secondary,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'Discretionary',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.slate600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.secondaryContainer,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '25%',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.secondaryDark,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                '₹11,850',
+                                style: GoogleFonts.inter(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.neutralDark,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Leisure, gadgets & luxury',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: AppColors.slate400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // 4. Spending Trend Chart Section
+                  SpendingTrendsWidget(weeklyTrend: summary.weeklyTrend),
+
+                  const SizedBox(height: 24),
+
+                  // 5. Recent Expenses Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Recent Expenses',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.neutralDark,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.inputFieldBg,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '4 Today',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.slate500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              'View All',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const PhosphorIcon(
+                              PhosphorIconsRegular.caretRight,
+                              color: AppColors.primary,
+                              size: 14,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Expense List
+                  ...summary.recentExpenses.map(
+                    (expense) => RecentExpenseTile(item: expense),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                 
+                ],
               ),
-            ],
+            ),
+          );
+        },
+      );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      color: Colors.transparent,
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: MediaQuery.of(context).padding.bottom > 0 ? MediaQuery.of(context).padding.bottom : 12,
+        top: 6,
+      ),
+      child: Container(
+        height: 72,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0F172A).withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(
+            color: const Color(0xFFF1F5F9),
+            width: 1.2,
           ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildNavItem(
+              index: 0,
+              icon: PhosphorIconsRegular.house,
+              activeIcon: PhosphorIconsFill.house,
+              label: 'Home',
+            ),
+            _buildNavItem(
+              index: 1,
+              icon: PhosphorIconsRegular.receipt,
+              activeIcon: PhosphorIconsFill.receipt,
+              label: 'Expenses',
+            ),
+            _buildNavItem(
+              index: 2,
+              icon: PhosphorIconsRegular.chartPieSlice,
+              activeIcon: PhosphorIconsFill.chartPieSlice,
+              label: 'Analytics',
+            ),
+            _buildNavItem(
+              index: 3,
+              icon: PhosphorIconsRegular.sparkle,
+              activeIcon: PhosphorIconsFill.sparkle,
+              label: 'AI Hub',
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _showProfileBottomSheet(
-    BuildContext context,
-    WidgetRef ref,
-    dynamic user,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+  }) {
+    final isSelected = _currentNavIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() => _currentNavIndex = index);
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primary.withValues(alpha: 0.08) : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.slate300,
-                    borderRadius: BorderRadius.circular(2),
+                AnimatedScale(
+                  scale: isSelected ? 1.12 : 1.0,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutBack,
+                  child: PhosphorIcon(
+                    isSelected ? activeIcon : icon,
+                    size: 22,
+                    color: isSelected ? AppColors.primary : AppColors.slate400,
                   ),
                 ),
-                const SizedBox(height: 20),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const PhosphorIcon(
-                    PhosphorIconsRegular.signOut,
-                    color: AppColors.error,
-                    size: 24,
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? AppColors.primary : AppColors.slate500,
+                    letterSpacing: -0.2,
                   ),
-                  title: Text(
-                    'Logout',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.error,
-                    ),
-                  ),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    await ref.read(authStateProvider.notifier).logout();
-                    if (context.mounted) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        (route) => false,
-                      );
-                    }
-                  },
                 ),
               ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

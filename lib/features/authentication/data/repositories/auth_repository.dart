@@ -82,6 +82,12 @@ class AuthRepository {
 
   /// Logout
   Future<void> logout() async {
-    await _storageService.clearAll();
+    try {
+      await _apiClient.dio.get(ApiEndpoints.logout);
+    } catch (_) {
+      // If network fails during logout, still clear local storage safely
+    } finally {
+      await _storageService.clearAll();
+    }
   }
 }

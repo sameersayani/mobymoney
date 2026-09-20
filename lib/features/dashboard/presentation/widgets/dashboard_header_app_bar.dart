@@ -12,6 +12,7 @@ class DashboardHeaderAppBar extends StatelessWidget implements PreferredSizeWidg
     this.subtitle = 'DASHBOARD',
     this.onAvatarTap,
     this.onNotificationTap,
+    this.actions,
   });
 
   final UserModel? user;
@@ -19,6 +20,7 @@ class DashboardHeaderAppBar extends StatelessWidget implements PreferredSizeWidg
   final String subtitle;
   final VoidCallback? onAvatarTap;
   final VoidCallback? onNotificationTap;
+  final List<Widget>? actions;
 
   @override
   Size get preferredSize => const Size.fromHeight(68);
@@ -115,6 +117,11 @@ class DashboardHeaderAppBar extends StatelessWidget implements PreferredSizeWidg
                 ],
               ),
               const Spacer(),
+
+              if (actions != null) ...[
+                ...actions!,
+                const SizedBox(width: 8),
+              ],
 
               // User Profile Avatar
               GestureDetector(

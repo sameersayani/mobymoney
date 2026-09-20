@@ -161,32 +161,9 @@ class AiChatHeader extends StatelessWidget implements PreferredSizeWidget {
                 onSelected: (val) {
                   if (val == 'clear') {
                     onClearChat();
-                  } else if (val == 'reset') {
-                    onResetDefault?.call();
                   }
                 },
                 itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'reset',
-                    child: Row(
-                      children: [
-                        const PhosphorIcon(
-                          PhosphorIconsRegular.arrowsClockwise,
-                          size: 18,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Reset to Demo Chat',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.neutralDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   PopupMenuItem(
                     value: 'clear',
                     child: Row(

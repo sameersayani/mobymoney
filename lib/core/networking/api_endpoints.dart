@@ -2,6 +2,7 @@ abstract class ApiEndpoints {
   // Auth
   static const String googleAuth = '/api/mobile/auth/google';
   static const String authMe = '/api/mobile/auth/me';
+  static const String logout = '/logout';
 
   // Expense Types
   static const String expenseTypes = '/expensetype';
@@ -21,6 +22,11 @@ abstract class ApiEndpoints {
   // Reports & Bulk Operations
   static const String downloadReport = '/download-report';
   static const String deleteExpenses = '/delete-expenses';
+
+  // AI Integration
+  static const String aiChat = '/api/ai/chat';
+  static const String aiConfirmDelete = '/api/ai/confirm-delete';
+  static const String aiConfirmClassification = '/api/ai/confirm-classification';
 }
 
 

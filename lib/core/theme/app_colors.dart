@@ -20,6 +20,7 @@ abstract class AppColors {
   static const Color tertiaryLight = Color(0xFF34D399);
   static const Color tertiaryDark = Color(0xFF059669);
   static const Color tertiaryContainer = Color(0xFFD1FAE5);
+  static const Color onTertiaryContainer = Color(0xFF064E3B);
 
   // Neutral & Dark Spectrum
   static const Color neutralDark = Color(0xFF0F172A); // Slate 900

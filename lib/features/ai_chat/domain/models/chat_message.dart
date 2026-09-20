@@ -26,6 +26,10 @@ class ChatMessage {
   final MessageStatus status;
   final List<ChatFinancialHighlight>? highlights;
   final List<String>? suggestedFollowUps;
+  final String? operation;
+  final Map<String, dynamic>? arguments;
+  final bool? reallyNeeded;
+  final bool isConfirmed;
 
   const ChatMessage({
     required this.id,
@@ -35,6 +39,10 @@ class ChatMessage {
     this.status = MessageStatus.delivered,
     this.highlights,
     this.suggestedFollowUps,
+    this.operation,
+    this.arguments,
+    this.reallyNeeded,
+    this.isConfirmed = false,
   });
 
   ChatMessage copyWith({
@@ -45,6 +53,10 @@ class ChatMessage {
     MessageStatus? status,
     List<ChatFinancialHighlight>? highlights,
     List<String>? suggestedFollowUps,
+    String? operation,
+    Map<String, dynamic>? arguments,
+    bool? reallyNeeded,
+    bool? isConfirmed,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -54,6 +66,10 @@ class ChatMessage {
       status: status ?? this.status,
       highlights: highlights ?? this.highlights,
       suggestedFollowUps: suggestedFollowUps ?? this.suggestedFollowUps,
+      operation: operation ?? this.operation,
+      arguments: arguments ?? this.arguments,
+      reallyNeeded: reallyNeeded ?? this.reallyNeeded,
+      isConfirmed: isConfirmed ?? this.isConfirmed,
     );
   }
 }

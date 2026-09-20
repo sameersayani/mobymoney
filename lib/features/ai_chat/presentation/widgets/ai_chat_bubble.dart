@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/core/widgets/app_snack_bar.dart';
+import '../providers/ai_chat_provider.dart';
 import '../../domain/models/chat_message.dart';
 
-class AiChatBubble extends StatelessWidget {
+class AiChatBubble extends ConsumerWidget {
   final ChatMessage message;
   final Function(String query)? onFollowUpSelected;
 
@@ -18,11 +20,11 @@ class AiChatBubble extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (message.isUser) {
       return _buildUserBubble(context);
     } else {
-      return _buildAiBubble(context);
+      return _buildAiBubble(context, ref);
     }
   }
 
@@ -94,7 +96,7 @@ class AiChatBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildAiBubble(BuildContext context) {
+  Widget _buildAiBubble(BuildContext context, WidgetRef ref) {
     final timeStr = DateFormat('hh:mm a').format(message.timestamp);
 
     return Padding(
@@ -163,6 +165,40 @@ class AiChatBubble extends StatelessWidget {
                     children: [
                       // Formatted Text Content
                       _buildFormattedContent(message.content),
+
+                      // AI Action Confirmation Card (If operation/arguments present)
+                      if ((message.operation != null || (message.arguments != null && message.arguments!.isNotEmpty)) && !message.isConfirmed) ...[
+                        const SizedBox(height: 12),
+                        _buildActionConfirmationCard(context, ref),
+                      ] else if (message.isConfirmed) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.tertiaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const PhosphorIcon(
+                                PhosphorIconsFill.checkCircle,
+                                size: 14,
+                                color: AppColors.tertiary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Action successfully completed',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.onTertiaryContainer,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
 
                       // Optional Financial Highlights Card
                       if (message.highlights != null &&
@@ -428,6 +464,133 @@ class AiChatBubble extends StatelessWidget {
 
     return RichText(
       text: TextSpan(children: spans),
+    );
+  }
+
+  Widget _buildActionConfirmationCard(BuildContext context, WidgetRef ref) {
+    final isDelete = (message.operation?.toLowerCase().contains('delete') ?? false) ||
+        (message.content.toLowerCase().contains('delete') && message.arguments != null);
+    final opName = message.operation ?? (isDelete ? 'Delete' : 'Confirm Action');
+    final chatState = ref.watch(aiChatProvider);
+    final isExecuting = chatState.isExecutingAction;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDelete
+            ? AppColors.errorContainer.withValues(alpha: 0.5)
+            : AppColors.primaryContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDelete
+              ? AppColors.error.withValues(alpha: 0.3)
+              : AppColors.primary.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              PhosphorIcon(
+                isDelete ? PhosphorIconsFill.trash : PhosphorIconsFill.lightning,
+                size: 16,
+                color: isDelete ? AppColors.error : AppColors.primary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Proposed Action: $opName',
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: isDelete ? AppColors.error : AppColors.onPrimaryContainer,
+                ),
+              ),
+            ],
+          ),
+          if (message.arguments != null && message.arguments!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            ...message.arguments!.entries.map((e) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  '• ${e.key}: ${e.value}',
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.slate700,
+                  ),
+                ),
+              );
+            }),
+          ],
+          if (message.reallyNeeded != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Tag: ${message.reallyNeeded == true ? "Essential (Needed)" : "Discretionary (Not Needed)"}',
+              style: GoogleFonts.inter(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: message.reallyNeeded == true ? AppColors.tertiary : AppColors.error,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 38,
+            child: ElevatedButton.icon(
+              onPressed: isExecuting
+                  ? null
+                  : () async {
+                      bool success = false;
+                      if (isDelete) {
+                        success = await ref.read(aiChatProvider.notifier).confirmAiDelete(message);
+                      } else {
+                        success = await ref.read(aiChatProvider.notifier).confirmAiClassification(message);
+                      }
+
+                      if (context.mounted) {
+                        if (success) {
+                          AppSnackBar.showSuccess(context, 'Action executed successfully!');
+                        } else {
+                          AppSnackBar.showError(
+                            context,
+                            ref.read(aiChatProvider).errorMessage ?? 'Failed to execute action',
+                          );
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDelete ? AppColors.error : AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              icon: isExecuting
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const PhosphorIcon(PhosphorIconsRegular.check, size: 16),
+              label: Text(
+                isExecuting ? 'Executing...' : 'Confirm & Execute',
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

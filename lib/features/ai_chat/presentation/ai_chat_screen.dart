@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/routing/app_router.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
@@ -65,6 +66,20 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
         onAvatarTap: () {
           context.push(AppRoutes.settings);
         },
+        actions: [
+          if (chatState.messages.isNotEmpty)
+            IconButton(
+              tooltip: 'Clear Chat',
+              icon: const PhosphorIcon(
+                PhosphorIconsRegular.trash,
+                size: 20,
+                color: AppColors.slate600,
+              ),
+              onPressed: () {
+                ref.read(aiChatProvider.notifier).clearChat();
+              },
+            ),
+        ],
       ),
       body: Column(
         children: [

@@ -337,7 +337,7 @@ class SettingsScreen extends ConsumerWidget {
                     iconColor: AppColors.primary,
                     iconBg: AppColors.primaryContainer,
                     title: 'Expense Types & Categories',
-                    subtitle: 'View and manage $categoriesCount server expense types',
+                    subtitle: 'View and manage expense types',
                     onTap: () {
                       context.push(AppRoutes.expenseTypes);
                     },

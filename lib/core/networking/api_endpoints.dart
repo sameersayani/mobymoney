@@ -5,5 +5,7 @@ abstract class ApiEndpoints {
 
   // Expense Types
   static const String expenseTypes = '/expensetype';
+  static String expenseTypeById(int id) => '/expensetype/$id';
 }
+
 

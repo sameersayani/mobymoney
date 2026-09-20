@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
+import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/features/expenses/domain/models/expense_type_model.dart';
 import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
 
@@ -31,6 +32,20 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _showAddEditDialog({ExpenseTypeModel? existingItem}) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _AddEditExpenseTypeDialog(existingItem: existingItem),
+    );
+  }
+
+  void _confirmDelete(ExpenseTypeModel item) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _DeleteExpenseTypeDialog(item: item),
+    );
   }
 
   @override
@@ -71,6 +86,24 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
             tooltip: 'Refresh Types',
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddEditDialog(),
+        backgroundColor: AppColors.primary,
+        elevation: 4,
+        icon: const PhosphorIcon(
+          PhosphorIconsRegular.plus,
+          color: Colors.white,
+          size: 20,
+        ),
+        label: Text(
+          'Add Expense Type',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
       ),
       body: expenseTypesAsync.when(
         loading: () => _buildLoadingSkeleton(),
@@ -118,7 +151,8 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
                                 color: AppColors.neutralDark,
                               ),
                               decoration: InputDecoration(
-                                hintText: 'Search expense type (e.g. Bills, Petrol)...',
+                                hintText:
+                                    'Search expense type (e.g. Bills, Petrol)...',
                                 hintStyle: GoogleFonts.inter(
                                   fontSize: 13,
                                   color: AppColors.slate400,
@@ -140,39 +174,7 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 10),
 
-                    // Active Count Strip
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'SERVER TYPES (${filteredTypes.length})',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                            color: AppColors.slate500,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F5F3),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'GET /expensetype',
-                            style: GoogleFonts.firaCode(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -189,7 +191,7 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
                           physics: const AlwaysScrollableScrollPhysics(
                             parent: BouncingScrollPhysics(),
                           ),
-                          padding: const EdgeInsets.fromLTRB(20, 14, 20, 40),
+                          padding: const EdgeInsets.fromLTRB(20, 14, 20, 100),
                           itemCount: filteredTypes.length,
                           separatorBuilder: (context, index) =>
                               const SizedBox(height: 10),
@@ -209,7 +211,7 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
 
   Widget _buildTypeCard(ExpenseTypeModel item) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -284,21 +286,26 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
             ),
           ),
 
-          // Cloud sync checkmark badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.slate100,
-              borderRadius: BorderRadius.circular(8),
+          // Edit Button (PUT /expensetype/{id})
+          IconButton(
+            onPressed: () => _showAddEditDialog(existingItem: item),
+            icon: const PhosphorIcon(
+              PhosphorIconsRegular.pencilSimple,
+              size: 20,
+              color: AppColors.slate600,
             ),
-            child: Text(
-              '#${item.id}',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppColors.slate600,
-              ),
+            tooltip: 'Edit Type',
+          ),
+
+          // Delete Button (DELETE /expensetype/{id})
+          IconButton(
+            onPressed: () => _confirmDelete(item),
+            icon: const PhosphorIcon(
+              PhosphorIconsRegular.trash,
+              size: 20,
+              color: AppColors.error,
             ),
+            tooltip: 'Delete Type',
           ),
         ],
       ),
@@ -411,7 +418,8 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -469,7 +477,7 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
             Text(
               _searchQuery.isNotEmpty
                   ? 'Try searching with a different keyword'
-                  : 'No categories available from server',
+                  : 'Tap "Add Expense Type" below to create one.',
               style: GoogleFonts.inter(
                 fontSize: 13,
                 color: AppColors.slate500,
@@ -478,6 +486,312 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Dedicated Add/Edit Dialog with isolated lifecycle
+class _AddEditExpenseTypeDialog extends ConsumerStatefulWidget {
+  final ExpenseTypeModel? existingItem;
+
+  const _AddEditExpenseTypeDialog({this.existingItem});
+
+  @override
+  ConsumerState<_AddEditExpenseTypeDialog> createState() =>
+      _AddEditExpenseTypeDialogState();
+}
+
+class _AddEditExpenseTypeDialogState
+    extends ConsumerState<_AddEditExpenseTypeDialog> {
+  late final TextEditingController _nameController;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController =
+        TextEditingController(text: widget.existingItem?.name ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final text = _nameController.text.trim();
+    if (text.isEmpty) {
+      AppSnackBar.showError(context, 'Please enter a type name');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      if (widget.existingItem != null) {
+        // Calls PUT /expensetype/{id}
+        await ref.read(expenseTypesProvider.notifier).updateType(
+              widget.existingItem!.id,
+              text,
+            );
+        if (!mounted) return;
+        Navigator.of(context).pop();
+        AppSnackBar.showSuccess(context, 'Expense type updated successfully!');
+      } else {
+        // Calls POST /expensetype
+        await ref.read(expenseTypesProvider.notifier).createType(text);
+        if (!mounted) return;
+        Navigator.of(context).pop();
+        AppSnackBar.showSuccess(context, 'Expense type created successfully!');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      AppSnackBar.showError(context, e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditing = widget.existingItem != null;
+
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isEditing ? 'Edit Expense Type' : 'Add Expense Type',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.neutralDark,
+                  ),
+                ),
+                IconButton(
+                  icon: const PhosphorIcon(
+                    PhosphorIconsRegular.x,
+                    size: 20,
+                  ),
+                  onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+                  color: AppColors.slate400,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Name Input
+            Text(
+              'TYPE NAME',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+                color: AppColors.slate400,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _nameController,
+              autofocus: true,
+              enabled: !_isSaving,
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.neutralDark,
+              ),
+              decoration: InputDecoration(
+                hintText: 'e.g., Grocery, Fuel, Gym, Freelance',
+                hintStyle: GoogleFonts.inter(
+                  color: AppColors.slate400,
+                  fontSize: 14,
+                ),
+                filled: true,
+                fillColor: AppColors.slate100,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Actions
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed:
+                        _isSaving ? null : () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: AppColors.slate200),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.slate600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            isEditing ? 'Save Changes' : 'Create Type',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Dedicated Delete Confirmation Dialog
+class _DeleteExpenseTypeDialog extends ConsumerStatefulWidget {
+  final ExpenseTypeModel item;
+
+  const _DeleteExpenseTypeDialog({required this.item});
+
+  @override
+  ConsumerState<_DeleteExpenseTypeDialog> createState() =>
+      _DeleteExpenseTypeDialogState();
+}
+
+class _DeleteExpenseTypeDialogState
+    extends ConsumerState<_DeleteExpenseTypeDialog> {
+  bool _isDeleting = false;
+
+  Future<void> _delete() async {
+    setState(() => _isDeleting = true);
+    try {
+      // Calls DELETE /expensetype/{id}
+      await ref
+          .read(expenseTypesProvider.notifier)
+          .deleteType(widget.item.id);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      AppSnackBar.showSuccess(
+        context,
+        'Expense type #${widget.item.id} deleted',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isDeleting = false);
+      AppSnackBar.showError(context, e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      title: Text(
+        'Delete Expense Type',
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: AppColors.neutralDark,
+        ),
+      ),
+      content: Text(
+        'Are you sure you want to delete "${widget.item.name}" (ID: ${widget.item.id})? This will remove it from the server.',
+        style: GoogleFonts.inter(
+          fontSize: 14,
+          color: AppColors.slate600,
+          height: 1.4,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isDeleting ? null : () => Navigator.of(context).pop(),
+          child: Text(
+            'Cancel',
+            style: GoogleFonts.inter(
+              color: AppColors.slate500,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: _isDeleting ? null : _delete,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.error,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: _isDeleting
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text(
+                  'Delete',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                ),
+        ),
+      ],
     );
   }
 }

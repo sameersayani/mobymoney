@@ -21,7 +21,6 @@ class ExpensesScreen extends ConsumerStatefulWidget {
 }
 
 class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
-  DateTime _selectedDate = DateTime.now();
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
@@ -32,25 +31,22 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 
   void _previousMonth() {
-    setState(() {
-      _selectedDate = DateTime(_selectedDate.year, _selectedDate.month - 1);
-    });
+    ref.read(selectedDateProvider.notifier).previousMonth();
   }
 
   void _nextMonth() {
-    setState(() {
-      _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + 1);
-    });
+    ref.read(selectedDateProvider.notifier).nextMonth();
   }
 
   void _pickMonthYear() async {
+    final cur = ref.read(selectedDateProvider);
     final picked = await CompactMonthYearPickerDialog.show(
       context,
-      initialDate: _selectedDate,
+      initialDate: cur,
     );
 
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
+    if (picked != null && picked != cur) {
+      ref.read(selectedDateProvider.notifier).updateDate(picked);
     }
   }
 
@@ -59,7 +55,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final authState = ref.watch(authStateProvider);
     final user = authState.asData?.value;
     final dashboardAsync = ref.watch(dashboardSummaryProvider);
-    final monthName = DateFormat('MMMM yyyy').format(_selectedDate);
+    final selectedDate = ref.watch(selectedDateProvider);
+    final monthName = DateFormat('MMMM yyyy').format(selectedDate);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -136,7 +133,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'TRANSACTIONS',
+                              'Expenses',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -564,15 +561,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: AppColors.neutralDark,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Try adjusting your search or filters, or log a new expense for this month.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 12.5,
-              color: AppColors.slate500,
             ),
           ),
         ],

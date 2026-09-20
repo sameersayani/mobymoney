@@ -1,5 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
+import 'package:mobymoney/features/expenses/data/repositories/daily_expense_repository.dart';
+
+final dailyExpenseRepositoryProvider = Provider<DailyExpenseRepository>((ref) {
+  return DailyExpenseRepository();
+});
+
+/// Shared Selected Date Notifier for Dashboard & Expenses Screen
+class SelectedDateNotifier extends Notifier<DateTime> {
+  @override
+  DateTime build() => DateTime.now();
+
+  void updateDate(DateTime newDate) => state = newDate;
+  void nextMonth() => state = DateTime(state.year, state.month + 1);
+  void previousMonth() => state = DateTime(state.year, state.month - 1);
+}
+
+final selectedDateProvider =
+    NotifierProvider<SelectedDateNotifier, DateTime>(SelectedDateNotifier.new);
 
 final dashboardSummaryProvider =
     NotifierProvider<DashboardNotifier, AsyncValue<DashboardSummaryModel>>(() {
@@ -7,90 +25,86 @@ final dashboardSummaryProvider =
 });
 
 class DashboardNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
+  DateTime _currentDate = DateTime.now();
+
   @override
   AsyncValue<DashboardSummaryModel> build() {
-    loadDashboardData();
+    _currentDate = ref.watch(selectedDateProvider);
+    loadDashboardData(date: _currentDate);
     return const AsyncValue.loading();
   }
 
-  Future<void> loadDashboardData() async {
+  Future<void> loadDashboardData({DateTime? date}) async {
+    final targetDate = date ?? _currentDate;
+    _currentDate = targetDate;
     state = const AsyncValue.loading();
     try {
-      await Future.delayed(const Duration(milliseconds: 300));
-      state = AsyncValue.data(DashboardSummaryModel.mock());
+      final repo = ref.read(dailyExpenseRepositoryProvider);
+      final response = await repo.getDailyExpenses(
+        month: targetDate.month,
+        year: targetDate.year,
+      );
+      final summary = response.toDashboardSummary(selectedDate: targetDate);
+      state = AsyncValue.data(summary);
     } catch (e, st) {
-      state = AsyncValue.error('Failed to load dashboard data', st);
+      state = AsyncValue.error(e.toString(), st);
     }
   }
 
   Future<void> refresh() async {
-    await loadDashboardData();
+    await loadDashboardData(date: _currentDate);
   }
 
-  void addExpense(RecentExpenseItemModel expense) {
-    state.whenData((current) {
-      final updatedExpenses = [expense, ...current.recentExpenses];
-      final newTotal = current.totalSpendingMinor + expense.amountMinor;
-      final newBudgetLeft = (current.budgetLeftMinor - expense.amountMinor).clamp(0, double.infinity).toInt();
-
-      state = AsyncValue.data(
-        current.copyWith(
-          recentExpenses: updatedExpenses,
-          totalSpendingMinor: newTotal,
-          budgetLeftMinor: newBudgetLeft,
-        ),
-      );
-    });
+  Future<void> addExpense({
+    required int expenseTypeId,
+    required DateTime date,
+    required String name,
+    required int quantityPurchased,
+    required double unitPrice,
+    required double amount,
+    required bool reallyNeeded,
+  }) async {
+    final repo = ref.read(dailyExpenseRepositoryProvider);
+    await repo.addExpense(
+      expenseTypeId: expenseTypeId,
+      date: date,
+      name: name,
+      quantityPurchased: quantityPurchased,
+      unitPrice: unitPrice,
+      amount: amount,
+      reallyNeeded: reallyNeeded,
+    );
+    await loadDashboardData(date: _currentDate);
   }
 
-  void updateExpense(RecentExpenseItemModel updatedExpense) {
-    state.whenData((current) {
-      final oldExpense = current.recentExpenses.firstWhere(
-        (e) => e.id == updatedExpense.id,
-        orElse: () => updatedExpense,
-      );
-      final diff = updatedExpense.amountMinor - oldExpense.amountMinor;
-      final updatedExpenses = current.recentExpenses.map((e) {
-        return e.id == updatedExpense.id ? updatedExpense : e;
-      }).toList();
-
-      final newTotal = current.totalSpendingMinor + diff;
-      final newBudgetLeft = (current.budgetLeftMinor - diff).clamp(0, double.infinity).toInt();
-
-      state = AsyncValue.data(
-        current.copyWith(
-          recentExpenses: updatedExpenses,
-          totalSpendingMinor: newTotal,
-          budgetLeftMinor: newBudgetLeft,
-        ),
-      );
-    });
+  Future<void> updateExpense({
+    required dynamic expenseId,
+    required int expenseTypeId,
+    required DateTime date,
+    required String name,
+    required int quantityPurchased,
+    required double unitPrice,
+    required double amount,
+    required bool reallyNeeded,
+  }) async {
+    final repo = ref.read(dailyExpenseRepositoryProvider);
+    await repo.updateExpense(
+      expenseId: expenseId,
+      expenseTypeId: expenseTypeId,
+      date: date,
+      name: name,
+      quantityPurchased: quantityPurchased,
+      unitPrice: unitPrice,
+      amount: amount,
+      reallyNeeded: reallyNeeded,
+    );
+    await loadDashboardData(date: _currentDate);
   }
 
-  void deleteExpense(String id) {
-    state.whenData((current) {
-      final target = current.recentExpenses.firstWhere(
-        (e) => e.id == id,
-        orElse: () => const RecentExpenseItemModel(
-          id: '',
-          title: '',
-          categoryName: '',
-          category: ExpenseCategory.officeSupplies,
-          timeFormatted: '',
-          amountMinor: 0,
-        ),
-      );
-      final updatedExpenses = current.recentExpenses.where((e) => e.id != id).toList();
-      final newTotal = current.totalSpendingMinor - target.amountMinor;
-      final newBudgetLeft = current.budgetLeftMinor + target.amountMinor;
-
-      state = AsyncValue.data(
-        current.copyWith(
-          recentExpenses: updatedExpenses,
-          totalSpendingMinor: newTotal,
-          budgetLeftMinor: newBudgetLeft,
-        ),
-      );
-    });
+  Future<void> deleteExpense(dynamic id) async {
+    final repo = ref.read(dailyExpenseRepositoryProvider);
+    await repo.deleteExpense(id);
+    await loadDashboardData(date: _currentDate);
   }
 }
+

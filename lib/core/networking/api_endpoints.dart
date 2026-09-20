@@ -6,6 +6,15 @@ abstract class ApiEndpoints {
   // Expense Types
   static const String expenseTypes = '/expensetype';
   static String expenseTypeById(int id) => '/expensetype/$id';
+
+  // Daily Expenses
+  static const String dailyExpense = '/dailyexpense';
+  static String dailyExpenseById(dynamic id) => '/dailyexpense/$id';
+  static String searchExpense(String name) => '/search-expense/$name';
+  static String addDailyExpense(int expenseTypeId) => '/dailyexpense/$expenseTypeId';
+  static String updateDailyExpense(dynamic expenseId) => '/dailyexpense/$expenseId';
+  static String deleteDailyExpense(dynamic expenseId) => '/dailyexpense/$expenseId';
 }
+
 
 

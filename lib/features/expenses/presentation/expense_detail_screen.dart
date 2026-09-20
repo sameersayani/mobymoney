@@ -8,6 +8,7 @@ import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
 import 'package:mobymoney/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:mobymoney/features/dashboard/presentation/widgets/add_expense_bottom_sheet.dart';
+import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
 
 class ExpenseDetailScreen extends ConsumerWidget {
   const ExpenseDetailScreen({
@@ -87,7 +88,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              'Delete Transaction?',
+              'Delete Expense?',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -211,11 +212,25 @@ class ExpenseDetailScreen extends ConsumerWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    ref.read(dashboardSummaryProvider.notifier).deleteExpense(expense.id);
+                  onPressed: () async {
                     Navigator.of(ctx).pop();
-                    Navigator.of(context).pop();
-                    AppSnackBar.showSuccess(context, 'Expense removed successfully');
+                    try {
+                      await ref
+                          .read(dashboardSummaryProvider.notifier)
+                          .deleteExpense(expense.id);
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                        AppSnackBar.showSuccess(
+                            context, 'Expense removed successfully');
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        AppSnackBar.showError(
+                          context,
+                          'Failed to delete expense: ${e.toString().replaceAll('Exception: ', '')}',
+                        );
+                      }
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.error,
@@ -237,6 +252,36 @@ class ExpenseDetailScreen extends ConsumerWidget {
     );
   }
 
+  String _resolveExpenseTypeName(RecentExpenseItemModel item, WidgetRef ref) {
+    String raw = item.categoryName.trim();
+
+    // Check if categoryName is a stringified map e.g. "{id: 17, name: Internet}"
+    if (raw.startsWith('{') && raw.endsWith('}')) {
+      final nameMatch = RegExp(r'name:\s*([^,}]+)').firstMatch(raw);
+      if (nameMatch != null) {
+        return nameMatch.group(1)?.trim() ?? 'General';
+      }
+    }
+
+    if (raw.isNotEmpty && int.tryParse(raw) == null && !raw.startsWith('{')) {
+      return raw;
+    }
+
+    final types = ref.watch(expenseTypesProvider).asData?.value ?? [];
+    if (item.expenseTypeId != null) {
+      final match = types.where((t) => t.id == item.expenseTypeId).firstOrNull;
+      if (match != null) return match.name;
+    }
+
+    final idFromCat = int.tryParse(raw);
+    if (idFromCat != null) {
+      final match = types.where((t) => t.id == idFromCat).firstOrNull;
+      if (match != null) return match.name;
+    }
+
+    return raw.isNotEmpty && !raw.startsWith('{') ? raw : 'General';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch current state to see if updated
@@ -249,6 +294,17 @@ class ExpenseDetailScreen extends ConsumerWidget {
 
     final rupees = currentItem.amountMinor ~/ 100;
     final isNeeded = currentItem.tag == ExpenseTag.needed;
+    final quantity = currentItem.quantity > 0 ? currentItem.quantity : 1;
+    final unitPriceRupees = (currentItem.unitPriceMinor > 0)
+        ? (currentItem.unitPriceMinor / 100).toStringAsFixed(2)
+        : (rupees / quantity).toStringAsFixed(2);
+
+    final expenseTypeName = _resolveExpenseTypeName(currentItem, ref);
+
+    // Format Date: DD-MM-YY (e.g. 20-09-26)
+    final dateObj = currentItem.rawDate ?? DateTime.now();
+    final formattedDate = DateFormat('dd-MM-yy').format(dateObj);
+    final formattedTime = DateFormat('hh:mm a').format(dateObj);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -265,7 +321,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Transaction Details',
+          'Expense Details',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -350,16 +406,16 @@ class ExpenseDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
 
-                  // Category subtitle
-                  Text(
-                    currentItem.categoryName,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.slate500,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
+                  // // Category subtitle
+                  // Text(
+                  //   currentItem.categoryName,
+                  //   style: GoogleFonts.inter(
+                  //     fontSize: 13,
+                  //     fontWeight: FontWeight.w500,
+                  //     color: AppColors.slate500,
+                  //   ),
+                  // ),
+                  const SizedBox(height: 15),
 
                   // Big Amount Display
                   Container(
@@ -398,14 +454,32 @@ class ExpenseDetailScreen extends ConsumerWidget {
                   // Detail Rows
                   _buildDetailRow(
                     icon: PhosphorIconsRegular.calendarBlank,
-                    label: 'Date & Time',
-                    value: currentItem.timeFormatted,
+                    label: 'Date',
+                    value: formattedDate,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildDetailRow(
+                    icon: PhosphorIconsRegular.clock,
+                    label: 'Time',
+                    value: formattedTime,
                   ),
                   const SizedBox(height: 14),
                   _buildDetailRow(
                     icon: PhosphorIconsRegular.tag,
                     label: 'Expense Type',
-                    value: currentItem.categoryName,
+                    value: expenseTypeName,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildDetailRow(
+                    icon: PhosphorIconsRegular.stack,
+                    label: 'Quantity Purchased',
+                    value: '$quantity',
+                  ),
+                  const SizedBox(height: 14),
+                  _buildDetailRow(
+                    icon: PhosphorIconsRegular.currencyInr,
+                    label: 'Unit Price',
+                    value: '₹$unitPriceRupees',
                   ),
                   const SizedBox(height: 14),
                   _buildDetailRow(
@@ -420,43 +494,13 @@ class ExpenseDetailScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        isNeeded ? 'Needed (Essential)' : 'Not Needed (Discretionary)',
+                        isNeeded ? 'Needed' : 'Not Needed',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: isNeeded ? AppColors.tertiaryDark : AppColors.slate600,
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _buildDetailRow(
-                    icon: PhosphorIconsRegular.hash,
-                    label: 'Transaction ID',
-                    value: 'TXN-#${currentItem.id.padLeft(6, '0')}',
-                  ),
-                  const SizedBox(height: 14),
-                  _buildDetailRow(
-                    icon: PhosphorIconsRegular.checkCircle,
-                    label: 'Payment Status',
-                    widgetValue: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const PhosphorIcon(
-                          PhosphorIconsFill.checkCircle,
-                          color: Color(0xFF10B981),
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Paid / Cleared',
-                          style: GoogleFonts.inter(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF10B981),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],

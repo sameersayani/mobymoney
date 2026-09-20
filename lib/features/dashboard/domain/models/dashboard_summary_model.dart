@@ -170,6 +170,10 @@ class RecentExpenseItemModel {
   final String timeFormatted;
   final int amountMinor;
   final ExpenseTag tag;
+  final int? expenseTypeId;
+  final int quantity;
+  final int unitPriceMinor;
+  final DateTime? rawDate;
 
   const RecentExpenseItemModel({
     required this.id,
@@ -179,6 +183,10 @@ class RecentExpenseItemModel {
     required this.timeFormatted,
     required this.amountMinor,
     this.tag = ExpenseTag.needed,
+    this.expenseTypeId,
+    this.quantity = 1,
+    this.unitPriceMinor = 0,
+    this.rawDate,
   });
 
   RecentExpenseItemModel copyWith({
@@ -189,6 +197,10 @@ class RecentExpenseItemModel {
     String? timeFormatted,
     int? amountMinor,
     ExpenseTag? tag,
+    int? expenseTypeId,
+    int? quantity,
+    int? unitPriceMinor,
+    DateTime? rawDate,
   }) {
     return RecentExpenseItemModel(
       id: id ?? this.id,
@@ -198,6 +210,10 @@ class RecentExpenseItemModel {
       timeFormatted: timeFormatted ?? this.timeFormatted,
       amountMinor: amountMinor ?? this.amountMinor,
       tag: tag ?? this.tag,
+      expenseTypeId: expenseTypeId ?? this.expenseTypeId,
+      quantity: quantity ?? this.quantity,
+      unitPriceMinor: unitPriceMinor ?? this.unitPriceMinor,
+      rawDate: rawDate ?? this.rawDate,
     );
   }
 }

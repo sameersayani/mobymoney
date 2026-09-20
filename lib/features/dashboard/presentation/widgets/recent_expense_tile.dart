@@ -8,6 +8,7 @@ import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
 import 'package:mobymoney/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
 import 'add_expense_bottom_sheet.dart';
 
 class RecentExpenseTile extends ConsumerWidget {
@@ -21,6 +22,36 @@ class RecentExpenseTile extends ConsumerWidget {
   final RecentExpenseItemModel item;
   final VoidCallback? onTap;
   final bool showActions;
+
+  String _resolveExpenseTypeName(WidgetRef ref) {
+    String raw = item.categoryName.trim();
+
+    // Check if categoryName is a stringified map e.g. "{id: 17, name: Internet}"
+    if (raw.startsWith('{') && raw.endsWith('}')) {
+      final nameMatch = RegExp(r'name:\s*([^,}]+)').firstMatch(raw);
+      if (nameMatch != null) {
+        return nameMatch.group(1)?.trim() ?? 'General';
+      }
+    }
+
+    if (raw.isNotEmpty && int.tryParse(raw) == null && !raw.startsWith('{')) {
+      return raw;
+    }
+
+    final types = ref.watch(expenseTypesProvider).asData?.value ?? [];
+    if (item.expenseTypeId != null) {
+      final match = types.where((t) => t.id == item.expenseTypeId).firstOrNull;
+      if (match != null) return match.name;
+    }
+
+    final idFromCat = int.tryParse(raw);
+    if (idFromCat != null) {
+      final match = types.where((t) => t.id == idFromCat).firstOrNull;
+      if (match != null) return match.name;
+    }
+
+    return raw.isNotEmpty && !raw.startsWith('{') ? raw : 'General';
+  }
 
   IconData get _icon {
     switch (item.category) {
@@ -161,7 +192,7 @@ class RecentExpenseTile extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          item.categoryName,
+                          _resolveExpenseTypeName(ref),
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: AppColors.slate500,
@@ -221,10 +252,24 @@ class RecentExpenseTile extends ConsumerWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    ref.read(dashboardSummaryProvider.notifier).deleteExpense(item.id);
+                  onPressed: () async {
                     Navigator.of(ctx).pop();
-                    AppSnackBar.showSuccess(context, 'Expense deleted successfully');
+                    try {
+                      await ref
+                          .read(dashboardSummaryProvider.notifier)
+                          .deleteExpense(item.id);
+                      if (context.mounted) {
+                        AppSnackBar.showSuccess(
+                            context, 'Expense deleted successfully');
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        AppSnackBar.showError(
+                          context,
+                          'Failed to delete expense: ${e.toString().replaceAll('Exception: ', '')}',
+                        );
+                      }
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.error,
@@ -248,6 +293,8 @@ class RecentExpenseTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final displayCategory = _resolveExpenseTypeName(ref);
+
     return InkWell(
       onTap: onTap ??
           () {
@@ -309,7 +356,7 @@ class RecentExpenseTile extends ConsumerWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        item.categoryName,
+                        displayCategory,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(

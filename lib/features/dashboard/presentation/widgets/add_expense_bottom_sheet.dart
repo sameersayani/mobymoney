@@ -38,9 +38,10 @@ class AddExpenseDialog extends ConsumerStatefulWidget {
 
 class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
   int? _selectedExpenseTypeId;
-  DateTime _selectedDateTime = DateTime.now();
+  DateTime _selectedDate = DateTime.now();
   late final TextEditingController _nameController;
-  late final TextEditingController _priceController;
+  late final TextEditingController _unitPriceController;
+  late final TextEditingController _amountController;
   int _quantity = 1;
   bool _isReallyNeeded = true;
   bool _isSubmitting = false;
@@ -51,38 +52,77 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
     if (widget.existingExpense != null) {
       final exp = widget.existingExpense!;
       _nameController = TextEditingController(text: exp.title);
-      final price = (exp.amountMinor / 100).toStringAsFixed(2);
-      _priceController = TextEditingController(text: price);
-      _quantity = 1;
+      _quantity = exp.quantity > 0 ? exp.quantity : 1;
+      final unitPrice = (exp.unitPriceMinor > 0)
+          ? (exp.unitPriceMinor / 100).toStringAsFixed(2)
+          : (exp.amountMinor / (_quantity > 0 ? _quantity : 1) / 100).toStringAsFixed(2);
+      final totalAmount = (exp.amountMinor / 100).toStringAsFixed(2);
+      _unitPriceController = TextEditingController(text: unitPrice);
+      _amountController = TextEditingController(text: totalAmount);
       _isReallyNeeded = exp.tag == ExpenseTag.needed;
+      _selectedExpenseTypeId = exp.expenseTypeId;
+      if (exp.rawDate != null) {
+        _selectedDate = exp.rawDate!;
+      }
     } else {
       _nameController = TextEditingController(text: '');
-      _priceController = TextEditingController(text: '250.00');
+      _unitPriceController = TextEditingController(text: '');
+      _amountController = TextEditingController(text: '');
     }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _priceController.dispose();
+    _unitPriceController.dispose();
+    _amountController.dispose();
     super.dispose();
+  }
+
+  void _onUnitPriceChanged(String val) {
+    final unitPrice = double.tryParse(val.trim()) ?? 0.0;
+    final total = unitPrice * _quantity;
+    _amountController.text = total > 0 ? total.toStringAsFixed(2) : '';
+  }
+
+  void _onAmountChanged(String val) {
+    final total = double.tryParse(val.trim()) ?? 0.0;
+    if (_quantity > 0) {
+      final unitPrice = total / _quantity;
+      _unitPriceController.text = unitPrice > 0 ? unitPrice.toStringAsFixed(2) : '';
+    }
+  }
+
+  void _onQuantityChanged(int newQuantity) {
+    setState(() => _quantity = newQuantity);
+    final unitPrice = double.tryParse(_unitPriceController.text.trim());
+    if (unitPrice != null && unitPrice > 0) {
+      final total = unitPrice * _quantity;
+      _amountController.text = total.toStringAsFixed(2);
+    } else {
+      final total = double.tryParse(_amountController.text.trim());
+      if (total != null && total > 0 && _quantity > 0) {
+        _unitPriceController.text = (total / _quantity).toStringAsFixed(2);
+      }
+    }
   }
 
   void _resetForm() {
     setState(() {
       _selectedExpenseTypeId = null;
-      _selectedDateTime = DateTime.now();
+      _selectedDate = DateTime.now();
       _nameController.text = '';
-      _priceController.text = '0.00';
+      _unitPriceController.text = '';
+      _amountController.text = '';
       _quantity = 1;
       _isReallyNeeded = true;
     });
   }
 
-  void _pickDateTime() async {
+  void _pickDate() async {
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: _selectedDateTime,
+      initialDate: _selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
       builder: (context, child) {
@@ -100,48 +140,23 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
       },
     );
 
-    if (pickedDate == null || !mounted) return;
-
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(_selectedDateTime),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.neutralDark,
-              surface: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (pickedTime != null && mounted) {
+    if (pickedDate != null && mounted) {
       setState(() {
-        _selectedDateTime = DateTime(
-          pickedDate.year,
-          pickedDate.month,
-          pickedDate.day,
-          pickedTime.hour,
-          pickedTime.minute,
-        );
+        _selectedDate = pickedDate;
       });
     }
   }
 
-  String _formatDateTime(DateTime dt) {
+  String _formatDate(DateTime dt) {
     final now = DateTime.now();
-    final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
-    final dateStr = isToday ? 'Today, ${DateFormat('d MMM yyyy').format(dt)}' : DateFormat('d MMM yyyy').format(dt);
-    final timeStr = DateFormat('hh:mm a').format(dt);
-    return '$dateStr • $timeStr';
+    final isToday =
+        dt.year == now.year && dt.month == now.month && dt.day == now.day;
+    return isToday
+        ? 'Today (${DateFormat('d MMM yyyy').format(dt)})'
+        : DateFormat('d MMM yyyy').format(dt);
   }
 
-  void _saveExpense(List<ExpenseTypeModel> availableTypes) {
+  Future<void> _saveExpense(List<ExpenseTypeModel> availableTypes) async {
     if (_isSubmitting) return;
 
     // Validate that an expense type is chosen
@@ -160,41 +175,74 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
     final name = _nameController.text.trim().isEmpty
         ? selectedType.name
         : _nameController.text.trim();
-    final price = double.tryParse(_priceController.text.trim()) ?? 0.0;
-    final totalAmountMinor = (price * _quantity * 100).toInt();
+
+    double unitPrice = double.tryParse(_unitPriceController.text.trim()) ?? 0.0;
+    double totalAmount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+
+    // If only one was entered, deduce the other
+    if (totalAmount > 0 && unitPrice == 0 && _quantity > 0) {
+      unitPrice = totalAmount / _quantity;
+    } else if (unitPrice > 0 && totalAmount == 0) {
+      totalAmount = unitPrice * _quantity;
+    }
+
+    // Combine picked date with current automatic time
+    final now = DateTime.now();
+    final completeDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      now.hour,
+      now.minute,
+      now.second,
+    );
 
     setState(() => _isSubmitting = true);
 
-    if (widget.existingExpense != null) {
-      final updated = widget.existingExpense!.copyWith(
-        title: name,
-        categoryName: selectedType.name,
-        category: ExpenseCategory.officeSupplies,
-        timeFormatted: _formatDateTime(_selectedDateTime),
-        amountMinor: totalAmountMinor,
-        tag: _isReallyNeeded ? ExpenseTag.needed : ExpenseTag.notNeeded,
-      );
-      ref.read(dashboardSummaryProvider.notifier).updateExpense(updated);
-
-      AppSnackBar.showSuccess(context, 'Expense updated successfully!');
-    } else {
-      final newExpense = RecentExpenseItemModel(
-        id: 'exp-${DateTime.now().millisecondsSinceEpoch}',
-        title: name,
-        categoryName: selectedType.name,
-        category: ExpenseCategory.officeSupplies,
-        timeFormatted: _formatDateTime(_selectedDateTime),
-        amountMinor: totalAmountMinor,
-        tag: _isReallyNeeded ? ExpenseTag.needed : ExpenseTag.notNeeded,
-      );
-      ref.read(dashboardSummaryProvider.notifier).addExpense(newExpense);
-
-      AppSnackBar.showSuccess(context, 'Expense added successfully!');
+    try {
+      if (widget.existingExpense != null) {
+        await ref.read(dashboardSummaryProvider.notifier).updateExpense(
+              expenseId: widget.existingExpense!.id,
+              expenseTypeId: selectedType.id,
+              date: completeDateTime,
+              name: name,
+              quantityPurchased: _quantity,
+              unitPrice: unitPrice,
+              amount: totalAmount,
+              reallyNeeded: _isReallyNeeded,
+            );
+        if (mounted) {
+          AppSnackBar.showSuccess(context, 'Expense updated successfully!');
+          Navigator.of(context).pop();
+        }
+      } else {
+        await ref.read(dashboardSummaryProvider.notifier).addExpense(
+              expenseTypeId: selectedType.id,
+              date: completeDateTime,
+              name: name,
+              quantityPurchased: _quantity,
+              unitPrice: unitPrice,
+              amount: totalAmount,
+              reallyNeeded: _isReallyNeeded,
+            );
+        if (mounted) {
+          AppSnackBar.showSuccess(context, 'Expense added successfully!');
+          Navigator.of(context).pop();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.showError(
+          context,
+          'Failed to save expense: ${e.toString().replaceAll('Exception: ', '')}',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
-
-    Navigator.of(context).pop();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -319,10 +367,10 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
 
                     const SizedBox(height: 16),
 
-                    // 3. DATE & TIME
-                    _buildSectionLabel('DATE & TIME'),
+                    // 3. DATE
+                    _buildSectionLabel('DATE'),
                     const SizedBox(height: 8),
-                    _buildDateTimeTile(),
+                    _buildDateTile(),
 
                     const SizedBox(height: 16),
 
@@ -364,14 +412,21 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
                       ],
                     ),
 
+                    const SizedBox(height: 16),
+
+                    // 6. TOTAL AMOUNT
+                    _buildSectionLabel('TOTAL AMOUNT'),
+                    const SizedBox(height: 8),
+                    _buildTotalAmountField(),
+
                     const SizedBox(height: 18),
 
-                    // 6. REALLY NEEDED? BANNER CARD
+                    // 7. REALLY NEEDED? BANNER CARD
                     _buildReallyNeededCard(),
 
                     const SizedBox(height: 22),
 
-                    // 7. ACTION BUTTONS ROW: [Cancel] & [Add/Save Expense]
+                    // 8. ACTION BUTTONS ROW: [Cancel] & [Add/Save Expense]
                     Row(
                       children: [
                         // Cancel Button
@@ -694,9 +749,9 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
   }
 
 
-  Widget _buildDateTimeTile() {
+  Widget _buildDateTile() {
     return InkWell(
-      onTap: _pickDateTime,
+      onTap: _pickDate,
       borderRadius: BorderRadius.circular(14),
       child: Container(
         height: 48,
@@ -726,7 +781,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                _formatDateTime(_selectedDateTime),
+                _formatDate(_selectedDate),
                 style: GoogleFonts.inter(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
@@ -734,20 +789,10 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
                 ),
               ),
             ),
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Center(
-                child: PhosphorIcon(
-                  PhosphorIconsRegular.clock,
-                  color: AppColors.slate600,
-                  size: 14,
-                ),
-              ),
+            const PhosphorIcon(
+              PhosphorIconsRegular.caretDown,
+              color: AppColors.slate400,
+              size: 14,
             ),
           ],
         ),
@@ -832,7 +877,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
           InkWell(
             onTap: () {
               if (_quantity > 1) {
-                setState(() => _quantity--);
+                _onQuantityChanged(_quantity - 1);
               }
             },
             borderRadius: BorderRadius.circular(14),
@@ -866,7 +911,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
           // Plus Button
           InkWell(
             onTap: () {
-              setState(() => _quantity++);
+              _onQuantityChanged(_quantity + 1);
             },
             borderRadius: BorderRadius.circular(14),
             child: Container(
@@ -922,15 +967,72 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
           const SizedBox(width: 6),
           Expanded(
             child: TextField(
-              controller: _priceController,
+              controller: _unitPriceController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: _onUnitPriceChanged,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: AppColors.neutralDark,
               ),
               decoration: InputDecoration(
-                hintText: '250.00',
+                hintText: '0.00',
+                hintStyle: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  color: AppColors.slate400,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalAmountField() {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Text(
+            '₹',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.neutralDark,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: TextField(
+              controller: _amountController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: _onAmountChanged,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.neutralDark,
+              ),
+              decoration: InputDecoration(
+                hintText: '0.00',
                 hintStyle: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   color: AppColors.slate400,

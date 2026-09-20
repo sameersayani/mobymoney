@@ -27,7 +27,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentNavIndex = 0;
-  DateTime _selectedDate = DateTime.now();
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -48,13 +47,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _pickDate(BuildContext context) async {
+    final currentDate = ref.read(selectedDateProvider);
     final picked = await CompactMonthYearPickerDialog.show(
       context,
-      initialDate: _selectedDate,
+      initialDate: currentDate,
     );
 
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
+    if (picked != null && picked != currentDate) {
+      ref.read(selectedDateProvider.notifier).updateDate(picked);
     }
   }
 
@@ -63,6 +63,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final authState = ref.watch(authStateProvider);
     final user = authState.asData?.value;
     final dashboardAsync = ref.watch(dashboardSummaryProvider);
+    final selectedDate = ref.watch(selectedDateProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -96,7 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             )
           : null,
-      body: _buildCurrentTabBody(dashboardAsync, user),
+      body: _buildCurrentTabBody(dashboardAsync, user, selectedDate),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -104,6 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildCurrentTabBody(
     AsyncValue<DashboardSummaryModel> dashboardAsync,
     dynamic user,
+    DateTime selectedDate,
   ) {
     switch (_currentNavIndex) {
       case 1:
@@ -113,13 +115,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       case 3:
         return const AiChatScreen();
       default:
-        return _buildHomeDashboard(dashboardAsync, user);
+        return _buildHomeDashboard(dashboardAsync, user, selectedDate);
     }
   }
 
   Widget _buildHomeDashboard(
     AsyncValue<DashboardSummaryModel> dashboardAsync,
     dynamic user,
+    DateTime selectedDate,
   ) {
     return dashboardAsync.when(
       loading: () => const Center(
@@ -128,16 +131,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
       error: (err, stack) => Center(
-        child: Text(
-          err.toString(),
-          style: GoogleFonts.inter(color: AppColors.error),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const PhosphorIcon(
+                PhosphorIconsRegular.warningCircle,
+                color: AppColors.error,
+                size: 40,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                err.toString(),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(color: AppColors.error),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => ref.read(dashboardSummaryProvider.notifier).refresh(),
+                icon: const PhosphorIcon(PhosphorIconsRegular.arrowClockwise, size: 16),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       data: (summary) {
         final greeting = _getGreeting();
         final displayName = _getUserDisplayName(user?.name);
         final formattedSelectedMonth =
-            DateFormat('MMM yyyy').format(_selectedDate);
+            DateFormat('MMM yyyy').format(selectedDate);
+        final totalRupees = summary.totalSpendingMinor ~/ 100;
+        final dailyAvgRupees = summary.dailyAverageMinor ~/ 100;
+        final essentialRupees = summary.essentialAmountMinor ~/ 100;
+        final discretionaryRupees = summary.discretionaryAmountMinor ~/ 100;
 
         return RefreshIndicator(
           color: AppColors.primary,
@@ -254,7 +286,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   const SizedBox(height: 18),
 
-                  // 2. Hero Card: Total Spending & Budget Left
+                  // 2. Hero Card: Total Spending & Dynamic Metrics
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -319,7 +351,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  '₹48,250',
+                                  '₹${NumberFormat('#,##,###').format(totalRupees)}',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w800,
@@ -332,7 +364,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
+                                  horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(20),
@@ -341,13 +373,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const PhosphorIcon(
-                                    PhosphorIconsRegular.arrowDown,
+                                    PhosphorIconsRegular.receipt,
                                     color: Colors.white,
                                     size: 13,
                                   ),
-                                  const SizedBox(width: 3),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    '12% vs last mo',
+                                    '${summary.recentExpenses.length} ${summary.recentExpenses.length == 1 ? "expense" : "expenses"}',
                                     style: GoogleFonts.inter(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
@@ -389,7 +421,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       text: TextSpan(
                                         children: [
                                           TextSpan(
-                                            text: '₹1,556',
+                                            text: '₹${NumberFormat('#,##,###').format(dailyAvgRupees)}',
                                             style: GoogleFonts.inter(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w700,
@@ -411,7 +443,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            // Budget Left
+                            // Essential vs Non-essential Breakdown Card
                             Expanded(
                               child: Container(
                                 padding: const EdgeInsets.all(10),
@@ -427,7 +459,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          'Budget Left',
+                                          'Essential Ratio',
                                           style: GoogleFonts.inter(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w500,
@@ -435,11 +467,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           ),
                                         ),
                                         Text(
-                                          '₹16,750',
+                                          '${summary.essentialPercentage}%',
                                           style: GoogleFonts.inter(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
-                                            color: Colors.white,
+                                            color: const Color(0xFF6EE7B7),
                                           ),
                                         ),
                                       ],
@@ -447,19 +479,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     const SizedBox(height: 6),
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(4),
-                                      child: const LinearProgressIndicator(
-                                        value: 0.74,
+                                      child: LinearProgressIndicator(
+                                        value: summary.totalSpendingMinor > 0
+                                            ? (summary.essentialPercentage / 100).clamp(0.0, 1.0)
+                                            : 0.0,
                                         minHeight: 4,
                                         backgroundColor: Colors.white24,
                                         valueColor:
-                                            AlwaysStoppedAnimation<Color>(
+                                            const AlwaysStoppedAnimation<Color>(
                                           Color(0xFF6EE7B7),
                                         ),
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '₹48,250 of ₹65,000 cap',
+                                      '₹${NumberFormat('#,##,###').format(essentialRupees)} Essential',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.inter(
                                         fontSize: 9,
                                         color: Colors.white60,
@@ -534,7 +570,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      '75%',
+                                      '${summary.essentialPercentage}%',
                                       style: GoogleFonts.inter(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
@@ -546,7 +582,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                '₹36,400',
+                                '₹${NumberFormat('#,##,###').format(essentialRupees)}',
                                 style: GoogleFonts.inter(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w700,
@@ -620,7 +656,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      '25%',
+                                      '${summary.discretionaryPercentage}%',
                                       style: GoogleFonts.inter(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
@@ -632,7 +668,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                '₹11,850',
+                                '₹${NumberFormat('#,##,###').format(discretionaryRupees)}',
                                 style: GoogleFonts.inter(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w700,
@@ -684,7 +720,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              '4 Today',
+                              ' Today',
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,

@@ -154,9 +154,11 @@ class _CurvedLineChartPainter extends CustomPainter {
 
     for (int i = 0; i < dailyTrend.length; i++) {
       final x = i * stepX;
-      // Invert Y because canvas Y starts at top
-      final ratio = dailyTrend[i].ratio.clamp(0.1, 1.0);
-      final y = size.height - (ratio * (size.height - 24)) - 12;
+      final isZero = dailyTrend[i].amountMinor == 0;
+      final effectiveRatio = isZero
+          ? 0.0
+          : ((dailyTrend[i].ratio * 0.82) + 0.18).clamp(0.18, 1.0);
+      final y = size.height - (effectiveRatio * (size.height - 36)) - 18;
       points.add(Offset(x, y));
     }
 

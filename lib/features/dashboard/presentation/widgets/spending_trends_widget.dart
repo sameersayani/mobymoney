@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
 
@@ -16,15 +18,34 @@ class SpendingTrendsWidget extends StatefulWidget {
 }
 
 class _SpendingTrendsWidgetState extends State<SpendingTrendsWidget> {
-  bool _isWeekly = true;
-  int _selectedIndex = 4; // Default to Friday (Today)
+  int _selectedIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default select today if available, or last item
+    if (widget.weeklyTrend.isNotEmpty) {
+      final todayIdx = widget.weeklyTrend.indexWhere((item) => item.isToday);
+      _selectedIndex = todayIdx != -1 ? todayIdx : widget.weeklyTrend.length - 1;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedIndex >= widget.weeklyTrend.length && widget.weeklyTrend.isNotEmpty) {
+      _selectedIndex = widget.weeklyTrend.length - 1;
+    }
+
     final selectedItem = widget.weeklyTrend.isNotEmpty &&
+            _selectedIndex >= 0 &&
             _selectedIndex < widget.weeklyTrend.length
         ? widget.weeklyTrend[_selectedIndex]
         : null;
+
+    final totalMinor = widget.weeklyTrend.fold<int>(0, (sum, item) => sum + item.amountMinor);
+    final count = widget.weeklyTrend.isNotEmpty ? widget.weeklyTrend.length : 1;
+    final avgMinor = (totalMinor / count).round();
+    final avgRupees = avgMinor ~/ 100;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -43,7 +64,7 @@ class _SpendingTrendsWidgetState extends State<SpendingTrendsWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header + Switcher
+          // Header + Weekly Badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -60,86 +81,37 @@ class _SpendingTrendsWidgetState extends State<SpendingTrendsWidget> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Avg ₹1,820 over 7 days',
+                    'Avg ₹${NumberFormat('#,##,###').format(avgRupees)} / day',
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      fontWeight: FontWeight.w400,
+                      fontWeight: FontWeight.w500,
                       color: AppColors.slate500,
                     ),
                   ),
                 ],
               ),
-              // Weekly / Monthly Toggle Pill
+              // Weekly Pill Indicator
               Container(
-                padding: const EdgeInsets.all(3),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.inputFieldBg,
+                  color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    GestureDetector(
-                      onTap: () => setState(() => _isWeekly = true),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: _isWeekly ? Colors.white : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: _isWeekly
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          'Weekly',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: _isWeekly
-                                ? FontWeight.w600
-                                : FontWeight.w500,
-                            color: _isWeekly
-                                ? AppColors.primary
-                                : AppColors.slate500,
-                          ),
-                        ),
-                      ),
+                    const PhosphorIcon(
+                      PhosphorIconsBold.chartBar,
+                      size: 13,
+                      color: AppColors.primary,
                     ),
-                    GestureDetector(
-                      onTap: () => setState(() => _isWeekly = false),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: !_isWeekly ? Colors.white : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: !_isWeekly
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          'Monthly',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: !_isWeekly
-                                ? FontWeight.w600
-                                : FontWeight.w500,
-                            color: !_isWeekly
-                                ? AppColors.primary
-                                : AppColors.slate500,
-                          ),
-                        ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Weekly',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.onPrimaryContainer,
                       ),
                     ),
                   ],
@@ -193,11 +165,15 @@ class _SpendingTrendsWidgetState extends State<SpendingTrendsWidget> {
                           // Bar
                           Container(
                             width: 24,
-                            height: (item.ratio * 68).clamp(8.0, 68.0),
+                            height: item.amountMinor == 0
+                                ? 4.0
+                                : ((item.ratio * 58.0) + 10.0).clamp(10.0, 68.0),
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? AppColors.primary
-                                  : const Color(0xFFE2E8F0),
+                                  : (item.amountMinor > 0
+                                      ? AppColors.primaryLight.withValues(alpha: 0.5)
+                                      : const Color(0xFFE2E8F0)),
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(6),
                               ),
@@ -255,7 +231,7 @@ class _SpendingTrendsWidgetState extends State<SpendingTrendsWidget> {
                     ),
                   ),
                   Text(
-                    '${selectedItem.day}, Oct',
+                    selectedItem.day,
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

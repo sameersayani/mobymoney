@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:mobymoney/core/theme/category_color_helper.dart';
 import 'package:mobymoney/features/analytics/presentation/widgets/pie_chart_widget.dart';
 
@@ -75,14 +76,30 @@ class ChartDataModel {
 
     final List<CategorySpendingData> catList = [];
     int totalMinor = 0;
+    final Set<int> usedColors = {};
+    int fallbackIndex = 0;
 
     categoryTotals.forEach((catName, catAmountMinor) {
       totalMinor += catAmountMinor;
+
+      Color color = CategoryColorHelper.getColorForCategory(catName);
+      if (usedColors.contains(color.toARGB32())) {
+        for (int i = 0; i < CategoryColorHelper.palette.length; i++) {
+          final candidate = CategoryColorHelper.palette[(fallbackIndex + i) % CategoryColorHelper.palette.length];
+          if (!usedColors.contains(candidate.toARGB32())) {
+            color = candidate;
+            fallbackIndex = (fallbackIndex + i + 1) % CategoryColorHelper.palette.length;
+            break;
+          }
+        }
+      }
+      usedColors.add(color.toARGB32());
+
       catList.add(
         CategorySpendingData(
           categoryName: catName,
           amountMinor: catAmountMinor,
-          color: CategoryColorHelper.getColorForCategory(catName),
+          color: color,
         ),
       );
     });

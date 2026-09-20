@@ -711,27 +711,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               color: AppColors.neutralDark,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.inputFieldBg,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              ' Today',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.slate500,
-                              ),
-                            ),
-                          ),
+                          // const SizedBox(width: 8),
+                          // Container(
+                          //   padding: const EdgeInsets.symmetric(
+                          //       horizontal: 8, vertical: 2),
+                          //   decoration: BoxDecoration(
+                          //     color: AppColors.inputFieldBg,
+                          //     borderRadius: BorderRadius.circular(10),
+                          //   ),
+                          //   child: Text(
+                          //     ' Today',
+                          //     style: GoogleFonts.inter(
+                          //       fontSize: 11,
+                          //       fontWeight: FontWeight.w600,
+                          //       color: AppColors.slate500,
+                          //     ),
+                          //   ),
+                          // ),
                         ],
                       ),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          setState(() => _currentNavIndex = 1);
+                        },
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           minimumSize: Size.zero,

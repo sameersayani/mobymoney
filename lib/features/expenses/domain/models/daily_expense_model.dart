@@ -208,28 +208,55 @@ class DailyExpenseResponseModel {
     // Build recent expense list
     final recentList = items.map((e) => e.toRecentExpenseItem()).toList();
 
-    // Group items into days for weekly/monthly spending trend
-    final Map<int, int> dayTotals = {};
-    for (final item in items) {
-      final day = item.date.day;
-      dayTotals[day] = (dayTotals[day] ?? 0) + item.amountMinor;
+    // Group items into days for weekly spending trend
+    final now = DateTime.now();
+    final bool isCurrentMonth = selectedDate.year == now.year && selectedDate.month == now.month;
+    final DateTime referenceDate = isCurrentMonth
+        ? now
+        : DateTime(selectedDate.year, selectedDate.month + 1, 0);
+
+    // Build trend for 7 days ending at referenceDate
+    final List<DateTime> sevenDays = [];
+    for (int i = 6; i >= 0; i--) {
+      sevenDays.add(referenceDate.subtract(Duration(days: i)));
     }
 
-    final int maxSpending = dayTotals.values.isEmpty
-        ? 1
-        : dayTotals.values.reduce((a, b) => a > b ? a : b);
+    final Map<int, int> dayAmounts = {};
+    for (int i = 0; i < sevenDays.length; i++) {
+      final targetDate = sevenDays[i];
+      int sumMinor = 0;
+      for (final item in items) {
+        final sameDate = item.date.year == targetDate.year &&
+            item.date.month == targetDate.month &&
+            item.date.day == targetDate.day;
+        final sameDayInMonth = (selectedDate.month == targetDate.month) && (item.date.day == targetDate.day);
+        if (sameDate || sameDayInMonth) {
+          sumMinor += item.amountMinor;
+        }
+      }
+      dayAmounts[i] = sumMinor;
+    }
 
-    // Build trend
+    int maxSpending = 0;
+    for (final amt in dayAmounts.values) {
+      if (amt > maxSpending) maxSpending = amt;
+    }
+    if (maxSpending <= 0) maxSpending = 1;
+
     final List<DailySpendingModel> trendList = [];
-    final now = DateTime.now();
-    for (int i = 6; i >= 0; i--) {
-      final dayDate = now.subtract(Duration(days: i));
+    for (int i = 0; i < sevenDays.length; i++) {
+      final dayDate = sevenDays[i];
       final dayName = DateFormat('E').format(dayDate);
-      final amount = dayTotals[dayDate.day] ?? 0;
-      final ratio = maxSpending > 0 ? (amount / maxSpending).clamp(0.1, 1.0) : 0.2;
+      final amount = dayAmounts[i] ?? 0;
+      final double ratio = amount > 0 ? (amount / maxSpending).clamp(0.0, 1.0) : 0.0;
       final label = amount > 0
           ? '₹${(amount / 100).toStringAsFixed(0)}'
           : '₹0';
+
+      final isToday = isCurrentMonth &&
+          dayDate.year == now.year &&
+          dayDate.month == now.month &&
+          dayDate.day == now.day;
 
       trendList.add(
         DailySpendingModel(
@@ -237,7 +264,7 @@ class DailyExpenseResponseModel {
           amountMinor: amount,
           label: label,
           ratio: ratio,
-          isToday: i == 0,
+          isToday: isToday,
         ),
       );
     }

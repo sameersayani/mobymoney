@@ -136,28 +136,30 @@ class _BarChartWidgetState extends State<BarChartWidget> {
                       // Bar Pill
                       Container(
                         width: 28,
-                        height: (120 * item.ratio).clamp(16.0, 120.0),
+                        height: item.amountMinor == 0
+                            ? 6.0
+                            : ((item.ratio * 104.0) + 16.0).clamp(16.0, 120.0),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: isPeak
+                            colors: item.amountMinor == 0
                                 ? [
-                                    const Color(0xFF10B981),
-                                    const Color(0xFF059669),
+                                    const Color(0xFFE2E8F0),
+                                    const Color(0xFFCBD5E1),
                                   ]
-                                : item.isToday
+                                : (isPeak && item.ratio >= 0.8
                                     ? [
-                                        AppColors.primaryLight,
-                                        AppColors.primary,
+                                        const Color(0xFF10B981),
+                                        const Color(0xFF059669),
                                       ]
                                     : [
-                                        const Color(0xFFE2E8F0),
-                                        const Color(0xFFCBD5E1),
-                                      ],
+                                        AppColors.primaryLight,
+                                        AppColors.primary,
+                                      ]),
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                           ),
                           borderRadius: BorderRadius.circular(8),
-                          boxShadow: isPeak || item.isToday
+                          boxShadow: (item.amountMinor > 0 && (isPeak || item.isToday))
                               ? [
                                   BoxShadow(
                                     color: (isPeak

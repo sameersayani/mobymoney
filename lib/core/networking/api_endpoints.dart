@@ -14,6 +14,9 @@ abstract class ApiEndpoints {
   static String addDailyExpense(int expenseTypeId) => '/dailyexpense/$expenseTypeId';
   static String updateDailyExpense(dynamic expenseId) => '/dailyexpense/$expenseId';
   static String deleteDailyExpense(dynamic expenseId) => '/dailyexpense/$expenseId';
+
+  // Analytics & Charts
+  static const String chartData = '/chart-data';
 }
 
 

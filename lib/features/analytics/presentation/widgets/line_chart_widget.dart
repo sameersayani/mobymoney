@@ -42,20 +42,33 @@ class LineChartWidget extends StatelessWidget {
                   color: AppColors.slate400,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Trend: -12%',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.onPrimaryContainer,
-                  ),
-                ),
+              Builder(
+                builder: (context) {
+                  if (dailyTrend.length < 2) return const SizedBox.shrink();
+                  final first = dailyTrend.first.amountMinor;
+                  final last = dailyTrend.last.amountMinor;
+                  if (first == 0 && last == 0) return const SizedBox.shrink();
+                  final percentChange = first == 0 
+                      ? (last > 0 ? 100 : 0) 
+                      : (((last - first) / first) * 100).round();
+                  final isDown = percentChange <= 0;
+                  final sign = percentChange > 0 ? '+' : '';
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isDown ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Trend: $sign$percentChange%',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: isDown ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -90,26 +103,36 @@ class LineChartWidget extends StatelessWidget {
           const Divider(color: Color(0xFFF1F5F9), height: 1),
           const SizedBox(height: 12),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Lowest: Wed (₹850)',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.slate600,
-                ),
-              ),
-              Text(
-                'Highest: Fri (₹3,420)',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.error,
-                ),
-              ),
-            ],
+          Builder(
+            builder: (context) {
+              if (dailyTrend.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              final lowestItem = dailyTrend.reduce((a, b) => a.amountMinor <= b.amountMinor ? a : b);
+              final highestItem = dailyTrend.reduce((a, b) => a.amountMinor >= b.amountMinor ? a : b);
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Lowest: ${lowestItem.day} (${lowestItem.label})',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.slate600,
+                    ),
+                  ),
+                  Text(
+                    'Highest: ${highestItem.day} (${highestItem.label})',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

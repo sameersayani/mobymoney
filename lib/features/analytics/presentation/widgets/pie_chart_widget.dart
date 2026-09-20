@@ -35,7 +35,8 @@ class _PieChartWidgetState extends State<PieChartWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final total = widget.totalAmountMinor;
+    final catTotal = widget.categories.fold<int>(0, (sum, c) => sum + c.amountMinor);
+    final total = catTotal > 0 ? catTotal : widget.totalAmountMinor;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -209,8 +210,9 @@ class _DonutChartPainter extends CustomPainter {
 
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
+    final isSingle = categories.length == 1;
     const strokeWidth = 24.0;
-    const gapAngle = 0.04; // small gap between slices
+    final gapAngle = isSingle ? 0.0 : 0.04;
 
     double startAngle = -math.pi / 2;
 
@@ -223,9 +225,20 @@ class _DonutChartPainter extends CustomPainter {
         ..color = cat.color
         ..style = PaintingStyle.stroke
         ..strokeWidth = isSelected ? strokeWidth + 6 : strokeWidth
-        ..strokeCap = StrokeCap.round;
+        ..strokeCap = isSingle ? StrokeCap.butt : StrokeCap.round;
 
-      if (sweepAngle > gapAngle) {
+      if (isSingle) {
+        canvas.drawArc(
+          Rect.fromCircle(
+            center: center,
+            radius: isSelected ? radius - 10 : radius - 12,
+          ),
+          startAngle,
+          sweepAngle,
+          false,
+          paint,
+        );
+      } else if (sweepAngle > gapAngle) {
         canvas.drawArc(
           Rect.fromCircle(
             center: center,

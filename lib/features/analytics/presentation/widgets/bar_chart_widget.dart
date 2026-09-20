@@ -196,26 +196,40 @@ class _BarChartWidgetState extends State<BarChartWidget> {
           const Divider(color: Color(0xFFF1F5F9), height: 1),
           const SizedBox(height: 12),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Weekly Peak: Fri (₹3.4k)',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.slate600,
-                ),
-              ),
-              Text(
-                'Avg: ₹1.9k / day',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
+          Builder(
+            builder: (context) {
+              if (widget.dailyTrend.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              final peakItem = widget.dailyTrend.reduce((a, b) => a.amountMinor >= b.amountMinor ? a : b);
+              final totalMinor = widget.dailyTrend.fold<int>(0, (sum, item) => sum + item.amountMinor);
+              final avgMinor = (totalMinor / widget.dailyTrend.length).round();
+              final avgFormatted = avgMinor >= 100000 
+                  ? '₹${(avgMinor / 100000).toStringAsFixed(1)}k' 
+                  : '₹${(avgMinor / 100).toStringAsFixed(0)}';
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Peak: ${peakItem.day} (${peakItem.label})',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.slate600,
+                    ),
+                  ),
+                  Text(
+                    'Avg: $avgFormatted / day',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

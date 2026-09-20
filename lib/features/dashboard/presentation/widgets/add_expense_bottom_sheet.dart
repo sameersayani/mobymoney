@@ -46,6 +46,11 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
   bool _isReallyNeeded = true;
   bool _isSubmitting = false;
 
+  // Validation Error Messages
+  String? _expenseTypeError;
+  String? _nameError;
+  String? _amountError;
+
   @override
   void initState() {
     super.initState();
@@ -80,12 +85,14 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
   }
 
   void _onUnitPriceChanged(String val) {
+    if (_amountError != null) setState(() => _amountError = null);
     final unitPrice = double.tryParse(val.trim()) ?? 0.0;
     final total = unitPrice * _quantity;
     _amountController.text = total > 0 ? total.toStringAsFixed(2) : '';
   }
 
   void _onAmountChanged(String val) {
+    if (_amountError != null) setState(() => _amountError = null);
     final total = double.tryParse(val.trim()) ?? 0.0;
     if (_quantity > 0) {
       final unitPrice = total / _quantity;
@@ -94,6 +101,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
   }
 
   void _onQuantityChanged(int newQuantity) {
+    if (newQuantity < 1) return;
     setState(() => _quantity = newQuantity);
     final unitPrice = double.tryParse(_unitPriceController.text.trim());
     if (unitPrice != null && unitPrice > 0) {
@@ -116,6 +124,9 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
       _amountController.text = '';
       _quantity = 1;
       _isReallyNeeded = true;
+      _expenseTypeError = null;
+      _nameError = null;
+      _amountError = null;
     });
   }
 
@@ -156,12 +167,50 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
         : DateFormat('d MMM yyyy').format(dt);
   }
 
+  bool _validateForm(List<ExpenseTypeModel> availableTypes) {
+    bool isValid = true;
+    String? expenseTypeError;
+    String? nameError;
+    String? amountError;
+
+    // 1. Expense Type validation
+    if (_selectedExpenseTypeId == null && widget.existingExpense == null) {
+      expenseTypeError = 'Please select an expense type';
+      isValid = false;
+    }
+
+    // 2. Expense Name validation
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      nameError = 'Please enter an expense name';
+      isValid = false;
+    } else if (name.length < 2) {
+      nameError = 'Expense name must be at least 2 characters';
+      isValid = false;
+    }
+
+    // 3. Amount & Unit Price validation
+    final unitPrice = double.tryParse(_unitPriceController.text.trim()) ?? 0.0;
+    final totalAmount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+
+    if (totalAmount <= 0 && unitPrice <= 0) {
+      amountError = 'Please enter a valid unit price or amount';
+      isValid = false;
+    }
+
+    setState(() {
+      _expenseTypeError = expenseTypeError;
+      _nameError = nameError;
+      _amountError = amountError;
+    });
+
+    return isValid;
+  }
+
   Future<void> _saveExpense(List<ExpenseTypeModel> availableTypes) async {
     if (_isSubmitting) return;
 
-    // Validate that an expense type is chosen
-    if (_selectedExpenseTypeId == null && widget.existingExpense == null) {
-      AppSnackBar.showError(context, 'Please select an expense type');
+    if (!_validateForm(availableTypes)) {
       return;
     }
 
@@ -639,88 +688,47 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
             ? _selectedExpenseTypeId
             : null;
 
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: const Color(0xFFE2E8F0),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 6,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: selectedId,
-              isExpanded: true,
-              hint: Row(
-                children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: AppColors.slate100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: PhosphorIcon(
-                        PhosphorIconsRegular.tag,
-                        color: AppColors.slate400,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Select Expense Type',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.slate400,
-                      ),
-                    ),
+        final hasError = _expenseTypeError != null;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: hasError ? AppColors.error : const Color(0xFFE2E8F0),
+                  width: hasError ? 1.5 : 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: hasError
+                        ? AppColors.error.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
-              icon: const PhosphorIcon(
-                PhosphorIconsRegular.caretDown,
-                color: AppColors.slate400,
-                size: 16,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              dropdownColor: Colors.white,
-              elevation: 4,
-              onChanged: (int? newId) {
-                if (newId != null) {
-                  setState(() => _selectedExpenseTypeId = newId);
-                }
-              },
-
-
-              items: types.map((ExpenseTypeModel item) {
-                return DropdownMenuItem<int>(
-                  value: item.id,
-                  child: Row(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: selectedId,
+                  isExpanded: true,
+                  hint: Row(
                     children: [
                       Container(
                         width: 30,
                         height: 30,
                         decoration: BoxDecoration(
-                          color: item.color.withValues(alpha: 0.14),
+                          color: AppColors.slate100,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Center(
+                        child: const Center(
                           child: PhosphorIcon(
-                            item.icon,
-                            color: item.color,
+                            PhosphorIconsRegular.tag,
+                            color: AppColors.slate400,
                             size: 16,
                           ),
                         ),
@@ -728,26 +736,80 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          item.name,
-                          overflow: TextOverflow.ellipsis,
+                          'Select Expense Type',
                           style: GoogleFonts.inter(
                             fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.neutralDark,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.slate400,
                           ),
                         ),
                       ),
                     ],
                   ),
-                );
-              }).toList(),
+                  icon: const PhosphorIcon(
+                    PhosphorIconsRegular.caretDown,
+                    color: AppColors.slate400,
+                    size: 16,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  dropdownColor: Colors.white,
+                  elevation: 4,
+                  onChanged: (int? newId) {
+                    if (newId != null) {
+                      setState(() {
+                        _selectedExpenseTypeId = newId;
+                        _expenseTypeError = null;
+                      });
+                    }
+                  },
+                  items: types.map((ExpenseTypeModel item) {
+                    return DropdownMenuItem<int>(
+                      value: item.id,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: item.color.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: PhosphorIcon(
+                                item.icon,
+                                color: item.color,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              item.name,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.neutralDark,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
-          ),
+            if (hasError) ...[
+              const SizedBox(height: 5),
+              _buildErrorRow(_expenseTypeError!),
+            ],
+          ],
         );
       },
     );
   }
-
 
   Widget _buildDateTile() {
     return InkWell(
@@ -801,53 +863,70 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
   }
 
   Widget _buildExpenseNameField() {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const PhosphorIcon(
-            PhosphorIconsRegular.notepad,
-            color: AppColors.slate700,
-            size: 18,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: _nameController,
-              style: GoogleFonts.inter(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w500,
-                color: AppColors.neutralDark,
-              ),
-              decoration: InputDecoration(
-                hintText: 'e.g. Office Stationery & Notebooks',
-                hintStyle: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: AppColors.slate400,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-              ),
+    final hasError = _nameError != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: hasError ? AppColors.error : const Color(0xFFE2E8F0),
+              width: hasError ? 1.5 : 1.2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: hasError
+                    ? AppColors.error.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
+          child: Row(
+            children: [
+              PhosphorIcon(
+                PhosphorIconsRegular.notepad,
+                color: hasError ? AppColors.error : AppColors.slate700,
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _nameController,
+                  onChanged: (val) {
+                    if (_nameError != null) {
+                      setState(() => _nameError = null);
+                    }
+                  },
+                  style: GoogleFonts.inter(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.neutralDark,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Office Stationery & Notebooks',
+                    hintStyle: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: AppColors.slate400,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (hasError) ...[
+          const SizedBox(height: 5),
+          _buildErrorRow(_nameError!),
         ],
-      ),
+      ],
     );
   }
 
@@ -936,6 +1015,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
   }
 
   Widget _buildUnitPriceField() {
+    final hasError = _amountError != null;
     return Container(
       height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -943,12 +1023,14 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1.2,
+          color: hasError ? AppColors.error : const Color(0xFFE2E8F0),
+          width: hasError ? 1.5 : 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: hasError
+                ? AppColors.error.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 1),
           ),
@@ -961,7 +1043,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: AppColors.neutralDark,
+              color: hasError ? AppColors.error : AppColors.neutralDark,
             ),
           ),
           const SizedBox(width: 6),
@@ -992,58 +1074,93 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
   }
 
   Widget _buildTotalAmountField() {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Text(
-            '₹',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.neutralDark,
+    final hasError = _amountError != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: hasError ? AppColors.error : const Color(0xFFE2E8F0),
+              width: hasError ? 1.5 : 1.2,
             ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: TextField(
-              controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              onChanged: _onAmountChanged,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: AppColors.neutralDark,
+            boxShadow: [
+              BoxShadow(
+                color: hasError
+                    ? AppColors.error.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
               ),
-              decoration: InputDecoration(
-                hintText: '0.00',
-                hintStyle: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  color: AppColors.slate400,
+            ],
+          ),
+          child: Row(
+            children: [
+              Text(
+                '₹',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: hasError ? AppColors.error : AppColors.neutralDark,
                 ),
-                border: InputBorder.none,
-                isDense: true,
               ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: TextField(
+                  controller: _amountController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: _onAmountChanged,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.neutralDark,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '0.00',
+                    hintStyle: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      color: AppColors.slate400,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (hasError) ...[
+          const SizedBox(height: 5),
+          _buildErrorRow(_amountError!),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildErrorRow(String errorText) {
+    return Row(
+      children: [
+        const PhosphorIcon(
+          PhosphorIconsRegular.warningCircle,
+          size: 13,
+          color: AppColors.error,
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            errorText,
+            style: GoogleFonts.inter(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.error,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

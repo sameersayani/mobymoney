@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:open_file_plus/open_file_plus.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
@@ -72,7 +72,7 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
   void _openFile() async {
     if (_downloadedFile == null) return;
     try {
-      final result = await OpenFile.open(_downloadedFile!.path);
+      final result = await OpenFilex.open(_downloadedFile!.path);
       if (result.type != ResultType.done && mounted) {
         AppSnackBar.showError(
           context,

@@ -9,6 +9,7 @@ import 'package:mobymoney/features/authentication/domain/models/user_model.dart'
 import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
 import 'package:mobymoney/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
+import 'package:mobymoney/features/settings/presentation/widgets/clear_expenses_dialog.dart';
 import 'package:mobymoney/features/settings/presentation/widgets/export_expense_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -351,6 +352,16 @@ class SettingsScreen extends ConsumerWidget {
                     title: 'Export Expense Data',
                     subtitle: 'Generate monthly or full-year Excel reports (XLSX)',
                     onTap: () => ExportExpenseDialog.show(context),
+                  ),
+                  _buildDivider(),
+                  _buildSettingsTile(
+                    context: context,
+                    icon: PhosphorIconsRegular.trash,
+                    iconColor: AppColors.error,
+                    iconBg: AppColors.errorContainer,
+                    title: 'Clear Expense History',
+                    subtitle: 'Bulk delete records for a month or entire year',
+                    onTap: () => ClearExpensesDialog.show(context),
                   ),
                   _buildDivider(),
                   _buildSettingsTile(

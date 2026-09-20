@@ -18,8 +18,9 @@ abstract class ApiEndpoints {
   // Analytics & Charts
   static const String chartData = '/chart-data';
 
-  // Reports
+  // Reports & Bulk Operations
   static const String downloadReport = '/download-report';
+  static const String deleteExpenses = '/delete-expenses';
 }
 
 

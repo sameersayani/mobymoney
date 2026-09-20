@@ -179,4 +179,34 @@ class DailyExpenseRepository {
       );
     }
   }
+
+  /// DELETE /delete-expenses?year=...&month=...
+  /// If [month] is provided, deletes that month's records.
+  /// If [month] is null, deletes all records for the [year].
+  Future<dynamic> deleteBulkExpenses({
+    required int year,
+    int? month,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'year': year,
+      };
+      if (month != null) {
+        queryParams['month'] = month;
+      }
+
+      final response = await _apiClient.dio.delete(
+        ApiEndpoints.deleteExpenses,
+        queryParameters: queryParams,
+      );
+
+      return response.data;
+    } on DioException catch (e) {
+      throw NetworkException.fromDioException(e);
+    } catch (e) {
+      throw NetworkException(
+        message: 'Failed to delete expenses: ${e.toString()}',
+      );
+    }
+  }
 }

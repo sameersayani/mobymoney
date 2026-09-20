@@ -106,5 +106,11 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
     await repo.deleteExpense(id);
     await loadDashboardData(date: _currentDate);
   }
+
+  Future<void> deleteBulkExpenses({required int year, int? month}) async {
+    final repo = ref.read(dailyExpenseRepositoryProvider);
+    await repo.deleteBulkExpenses(year: year, month: month);
+    await loadDashboardData(date: _currentDate);
+  }
 }
 

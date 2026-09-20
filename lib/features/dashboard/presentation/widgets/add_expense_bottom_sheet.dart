@@ -6,7 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/core/widgets/app_snack_bar.dart';
-import 'package:mobymoney/features/settings/presentation/providers/expense_categories_provider.dart';
+import 'package:mobymoney/features/expenses/domain/models/expense_type_model.dart';
+import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
 import '../../domain/models/dashboard_summary_model.dart';
 import '../providers/dashboard_provider.dart';
 
@@ -36,12 +37,13 @@ class AddExpenseDialog extends ConsumerStatefulWidget {
 }
 
 class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
-  String? _selectedCategoryId;
+  int? _selectedExpenseTypeId;
   DateTime _selectedDateTime = DateTime.now();
   late final TextEditingController _nameController;
   late final TextEditingController _priceController;
   int _quantity = 1;
   bool _isReallyNeeded = true;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -54,7 +56,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
       _quantity = 1;
       _isReallyNeeded = exp.tag == ExpenseTag.needed;
     } else {
-      _nameController = TextEditingController(text: 'Office Stationery & Notebooks');
+      _nameController = TextEditingController(text: '');
       _priceController = TextEditingController(text: '250.00');
     }
   }
@@ -68,7 +70,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
 
   void _resetForm() {
     setState(() {
-      _selectedCategoryId = null;
+      _selectedExpenseTypeId = null;
       _selectedDateTime = DateTime.now();
       _nameController.text = '';
       _priceController.text = '0.00';
@@ -139,24 +141,35 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
     return '$dateStr • $timeStr';
   }
 
-  void _saveExpense() {
-    final categories = ref.read(expenseCategoriesProvider);
-    final selectedCat = categories.firstWhere(
-      (c) => c.id == _selectedCategoryId,
-      orElse: () => categories.isNotEmpty ? categories.first : kDefaultExpenseCategories.first,
+  void _saveExpense(List<ExpenseTypeModel> availableTypes) {
+    if (_isSubmitting) return;
+
+    // Validate that an expense type is chosen
+    if (_selectedExpenseTypeId == null && widget.existingExpense == null) {
+      AppSnackBar.showError(context, 'Please select an expense type');
+      return;
+    }
+
+    final selectedType = availableTypes.firstWhere(
+      (t) => t.id == _selectedExpenseTypeId,
+      orElse: () => availableTypes.isNotEmpty
+          ? availableTypes.first
+          : const ExpenseTypeModel(id: 1, name: 'General Expense'),
     );
 
     final name = _nameController.text.trim().isEmpty
-        ? selectedCat.name
+        ? selectedType.name
         : _nameController.text.trim();
     final price = double.tryParse(_priceController.text.trim()) ?? 0.0;
     final totalAmountMinor = (price * _quantity * 100).toInt();
 
+    setState(() => _isSubmitting = true);
+
     if (widget.existingExpense != null) {
       final updated = widget.existingExpense!.copyWith(
         title: name,
-        categoryName: selectedCat.name,
-        category: selectedCat.category,
+        categoryName: selectedType.name,
+        category: ExpenseCategory.officeSupplies,
         timeFormatted: _formatDateTime(_selectedDateTime),
         amountMinor: totalAmountMinor,
         tag: _isReallyNeeded ? ExpenseTag.needed : ExpenseTag.notNeeded,
@@ -168,8 +181,8 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
       final newExpense = RecentExpenseItemModel(
         id: 'exp-${DateTime.now().millisecondsSinceEpoch}',
         title: name,
-        categoryName: selectedCat.name,
-        category: selectedCat.category,
+        categoryName: selectedType.name,
+        category: ExpenseCategory.officeSupplies,
         timeFormatted: _formatDateTime(_selectedDateTime),
         amountMinor: totalAmountMinor,
         tag: _isReallyNeeded ? ExpenseTag.needed : ExpenseTag.notNeeded,
@@ -182,10 +195,24 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
     Navigator.of(context).pop();
   }
 
+
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final isEditing = widget.existingExpense != null;
+    final expenseTypesAsync = ref.watch(expenseTypesProvider);
+    final availableTypes = expenseTypesAsync.asData?.value ?? [];
+
+    // Preselect existing expense category if editing and not yet set
+    if (isEditing && _selectedExpenseTypeId == null && availableTypes.isNotEmpty) {
+      final match = availableTypes.firstWhere(
+        (t) =>
+            t.name.toLowerCase() ==
+            widget.existingExpense!.categoryName.toLowerCase(),
+        orElse: () => availableTypes.first,
+      );
+      _selectedExpenseTypeId = match.id;
+    }
 
     return Dialog(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -288,7 +315,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
                     // 2. EXPENSE TYPE (Dropdown)
                     _buildSectionLabel('EXPENSE TYPE'),
                     const SizedBox(height: 8),
-                    _buildExpenseTypeDropdown(),
+                    _buildExpenseTypeDropdown(expenseTypesAsync),
 
                     const SizedBox(height: 16),
 
@@ -375,37 +402,51 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
                         Expanded(
                           flex: 2,
                           child: ElevatedButton(
-                            onPressed: _saveExpense,
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => _saveExpense(availableTypes),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF0F766E),
                               foregroundColor: Colors.white,
+                              disabledBackgroundColor:
+                                  const Color(0xFF0F766E).withValues(alpha: 0.5),
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                PhosphorIcon(
-                                  isEditing
-                                      ? PhosphorIconsRegular.check
-                                      : PhosphorIconsRegular.plusCircle,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  isEditing ? 'Save Changes' : 'Add Expense',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.1,
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      PhosphorIcon(
+                                        isEditing
+                                            ? PhosphorIconsRegular.check
+                                            : PhosphorIconsRegular.plusCircle,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        isEditing ? 'Save Changes' : 'Add Expense',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.1,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                       ],
@@ -432,62 +473,151 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
     );
   }
 
-  Widget _buildExpenseTypeDropdown() {
-    final categories = ref.watch(expenseCategoriesProvider);
-    final selectedId = _selectedCategoryId ?? (categories.isNotEmpty ? categories.first.id : '');
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: categories.any((c) => c.id == selectedId)
-              ? selectedId
-              : (categories.isNotEmpty ? categories.first.id : null),
-          isExpanded: true,
-          icon: const PhosphorIcon(
-            PhosphorIconsRegular.caretDown,
-            color: AppColors.slate400,
-            size: 16,
-          ),
+  Widget _buildExpenseTypeDropdown(
+      AsyncValue<List<ExpenseTypeModel>> expenseTypesAsync) {
+    return expenseTypesAsync.when(
+      loading: () => Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          dropdownColor: Colors.white,
-          elevation: 4,
-          onChanged: (String? newId) {
-            if (newId != null) {
-              setState(() => _selectedCategoryId = newId);
-            }
-          },
-          items: categories.map((ExpenseCategoryItem item) {
-            return DropdownMenuItem<String>(
-              value: item.id,
-              child: Row(
+          border: Border.all(
+            color: const Color(0xFFE2E8F0),
+            width: 1.2,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Loading expense types...',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppColors.slate400,
+              ),
+            ),
+          ],
+        ),
+      ),
+      error: (error, _) => Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF2F2),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: const Color(0xFFFECACA),
+            width: 1.2,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Row(
+          children: [
+            const PhosphorIcon(
+              PhosphorIconsRegular.warningCircle,
+              color: AppColors.error,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Failed to load types',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.error,
+                ),
+              ),
+            ),
+            InkWell(
+              onTap: () => ref.read(expenseTypesProvider.notifier).refresh(),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Text(
+                  'Retry',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      data: (types) {
+        if (types.isEmpty) {
+          return Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1.2,
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Center(
+              child: Text(
+                'No expense types found',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: AppColors.slate400,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final selectedId = types.any((t) => t.id == _selectedExpenseTypeId)
+            ? _selectedExpenseTypeId
+            : null;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: const Color(0xFFE2E8F0),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: selectedId,
+              isExpanded: true,
+              hint: Row(
                 children: [
                   Container(
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: item.color.withValues(alpha: 0.14),
+                      color: AppColors.slate100,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Center(
+                    child: const Center(
                       child: PhosphorIcon(
-                        item.icon,
-                        color: item.color,
+                        PhosphorIconsRegular.tag,
+                        color: AppColors.slate400,
                         size: 16,
                       ),
                     ),
@@ -495,23 +625,74 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      item.name,
-                      overflow: TextOverflow.ellipsis,
+                      'Select Expense Type',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.neutralDark,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.slate400,
                       ),
                     ),
                   ),
                 ],
               ),
-            );
-          }).toList(),
-        ),
-      ),
+              icon: const PhosphorIcon(
+                PhosphorIconsRegular.caretDown,
+                color: AppColors.slate400,
+                size: 16,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              dropdownColor: Colors.white,
+              elevation: 4,
+              onChanged: (int? newId) {
+                if (newId != null) {
+                  setState(() => _selectedExpenseTypeId = newId);
+                }
+              },
+
+
+              items: types.map((ExpenseTypeModel item) {
+                return DropdownMenuItem<int>(
+                  value: item.id,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: item.color.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: PhosphorIcon(
+                            item.icon,
+                            color: item.color,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          item.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.neutralDark,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
     );
   }
+
 
   Widget _buildDateTimeTile() {
     return InkWell(

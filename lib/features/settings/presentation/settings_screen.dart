@@ -8,7 +8,7 @@ import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/features/authentication/domain/models/user_model.dart';
 import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
 import 'package:mobymoney/features/dashboard/presentation/providers/dashboard_provider.dart';
-import 'package:mobymoney/features/settings/presentation/providers/expense_categories_provider.dart';
+import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
 import 'package:mobymoney/features/settings/presentation/widgets/export_expense_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -128,7 +128,8 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
     final user = authState.asData?.value;
-    final categoriesCount = ref.watch(expenseCategoriesProvider).length;
+    final typesAsync = ref.watch(expenseTypesProvider);
+    final categoriesCount = typesAsync.asData?.value.length ?? 0;
     final dashboardAsync = ref.watch(dashboardSummaryProvider);
     final expenseCount = dashboardAsync.asData?.value.recentExpenses.length ?? 0;
 
@@ -336,7 +337,7 @@ class SettingsScreen extends ConsumerWidget {
                     iconColor: AppColors.primary,
                     iconBg: AppColors.primaryContainer,
                     title: 'Expense Types & Categories',
-                    subtitle: 'Manage $categoriesCount categories (Add, Edit, Delete)',
+                    subtitle: 'View and manage $categoriesCount server expense types',
                     onTap: () {
                       context.push(AppRoutes.expenseTypes);
                     },

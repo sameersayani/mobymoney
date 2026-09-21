@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:mobymoney/core/routing/app_router.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
 import 'package:mobymoney/features/dashboard/presentation/widgets/dashboard_header_app_bar.dart';
+import 'package:mobymoney/features/settings/presentation/widgets/profile_drawer.dart';
 import 'providers/ai_chat_provider.dart';
 import 'widgets/ai_chat_bubble.dart';
 import 'widgets/ai_chat_input.dart';
@@ -13,13 +12,15 @@ import 'widgets/ai_typing_indicator.dart';
 import 'widgets/ai_welcome_view.dart';
 
 class AiChatScreen extends ConsumerStatefulWidget {
-  const AiChatScreen({super.key});
+  final VoidCallback? onOpenDrawer;
+  const AiChatScreen({super.key, this.onOpenDrawer});
 
   @override
   ConsumerState<AiChatScreen> createState() => _AiChatScreenState();
 }
 
 class _AiChatScreenState extends ConsumerState<AiChatScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _scrollController = ScrollController();
 
   void _scrollToBottom() {
@@ -59,13 +60,14 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     });
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: widget.onOpenDrawer == null ? const ProfileDrawer() : null,
       backgroundColor: AppColors.background,
       appBar: DashboardHeaderAppBar(
         user: user,
         subtitle: 'AI HUB',
-        onAvatarTap: () {
-          context.push(AppRoutes.settings);
-        },
+        onMenuTap: widget.onOpenDrawer ?? () => _scaffoldKey.currentState?.openDrawer(),
+        onAvatarTap: widget.onOpenDrawer ?? () => _scaffoldKey.currentState?.openDrawer(),
         actions: [
           if (chatState.messages.isNotEmpty)
             IconButton(

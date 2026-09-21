@@ -141,6 +141,9 @@ class AppLogger {
 
   static String _formatJson(dynamic data) {
     try {
+      if (data is List<int>) {
+        return '<Binary Data: ${data.length} bytes>';
+      }
       if (data is Map<String, dynamic> || data is List) {
         return const JsonEncoder.withIndent('  ').convert(data);
       }

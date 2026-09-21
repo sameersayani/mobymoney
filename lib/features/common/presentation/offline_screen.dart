@@ -199,17 +199,7 @@ class _OfflineScreenState extends State<OfflineScreen> with SingleTickerProvider
 
                             const SizedBox(height: 12),
 
-                            // Offline mode note
-                            Center(
-                              child: Text(
-                                'Your local data is safe and will sync once reconnected.',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: AppColors.slate400,
-                                ),
-                              ),
-                            ),
+
                           ],
                         ),
                       ],

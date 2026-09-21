@@ -9,6 +9,7 @@ import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
 import 'package:mobymoney/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
+import 'package:mobymoney/features/settings/presentation/providers/currency_provider.dart';
 import 'add_expense_bottom_sheet.dart';
 
 class RecentExpenseTile extends ConsumerWidget {
@@ -16,7 +17,7 @@ class RecentExpenseTile extends ConsumerWidget {
     super.key,
     required this.item,
     this.onTap,
-    this.showActions = false,
+    this.showActions = true,
   });
 
   final RecentExpenseItemModel item;
@@ -26,7 +27,6 @@ class RecentExpenseTile extends ConsumerWidget {
   String _resolveExpenseTypeName(WidgetRef ref) {
     String raw = item.categoryName.trim();
 
-    // Check if categoryName is a stringified map e.g. "{id: 17, name: Internet}"
     if (raw.startsWith('{') && raw.endsWith('}')) {
       final nameMatch = RegExp(r'name:\s*([^,}]+)').firstMatch(raw);
       if (nameMatch != null) {
@@ -53,57 +53,176 @@ class RecentExpenseTile extends ConsumerWidget {
     return raw.isNotEmpty && !raw.startsWith('{') ? raw : 'General';
   }
 
-  IconData get _icon {
-    switch (item.category) {
-      case ExpenseCategory.foodDining:
-        return PhosphorIconsRegular.coffee;
-      case ExpenseCategory.officeSupplies:
-        return PhosphorIconsRegular.bagSimple;
-      case ExpenseCategory.subscription:
-        return PhosphorIconsRegular.filmSlate;
-      case ExpenseCategory.transportation:
-        return PhosphorIconsRegular.taxi;
-      default:
-        return PhosphorIconsRegular.receipt;
+  IconData _getCategoryIcon(String catName, String title) {
+    final lower = '$catName $title'.toLowerCase().trim();
+    if (lower.contains('bill') || lower.contains('receipt') || lower.contains('invoice')) {
+      return PhosphorIconsRegular.receipt;
+    } else if (lower.contains('book') || lower.contains('novel') || lower.contains('read')) {
+      return PhosphorIconsRegular.bookOpen;
+    } else if (lower.contains('cinema') || lower.contains('movie') || lower.contains('theatre') || lower.contains('film')) {
+      return PhosphorIconsRegular.filmSlate;
+    } else if (lower.contains('cloth') || lower.contains('wear') || lower.contains('shirt') || lower.contains('pant') || lower.contains('dress')) {
+      return PhosphorIconsRegular.tShirt;
+    } else if (lower.contains('doctor') || lower.contains('hospital') || lower.contains('clinic') || lower.contains('consult')) {
+      return PhosphorIconsRegular.firstAid;
+    } else if (lower.contains('eat') || lower.contains('party') || lower.contains('food') || lower.contains('dining') || lower.contains('restaurant') || lower.contains('snack') || lower.contains('coffee') || lower.contains('tea')) {
+      return PhosphorIconsRegular.forkKnife;
+    } else if (lower.contains('game') || lower.contains('entertainment') || lower.contains('play') || lower.contains('gaming')) {
+      return PhosphorIconsRegular.gameController;
+    } else if (lower.contains('grocery') || lower.contains('carrot') || lower.contains('vegetable') || lower.contains('fruit') || lower.contains('supermarket') || lower.contains('market')) {
+      return PhosphorIconsRegular.shoppingCart;
+    } else if (lower.contains('internet') || lower.contains('wifi') || lower.contains('broadband') || lower.contains('fiber')) {
+      return PhosphorIconsRegular.wifiHigh;
+    } else if (lower.contains('lab') || lower.contains('test') || lower.contains('blood') || lower.contains('scan')) {
+      return PhosphorIconsRegular.flask;
+    } else if (lower.contains('lpg') || lower.contains('gas') || lower.contains('cylinder')) {
+      return PhosphorIconsRegular.fire;
+    } else if (lower.contains('medicin') || lower.contains('pharma') || lower.contains('pill') || lower.contains('tablet') || lower.contains('capsule')) {
+      return PhosphorIconsRegular.pill;
+    } else if (lower.contains('mobile phone') || (lower.contains('mobile') && !lower.contains('recharge')) || lower.contains('smartphone')) {
+      return PhosphorIconsRegular.deviceMobile;
+    } else if (lower.contains('parking')) {
+      return PhosphorIconsRegular.car;
+    } else if (lower.contains('petrol') || lower.contains('fuel') || lower.contains('diesel')) {
+      return PhosphorIconsRegular.gasPump;
+    } else if (lower.contains('recharge') || lower.contains('topup') || lower.contains('dth') || lower.contains('bill pay')) {
+      return PhosphorIconsRegular.lightning;
+    } else if (lower.contains('repair') || lower.contains('service') || lower.contains('mechanic') || lower.contains('maintain')) {
+      return PhosphorIconsRegular.wrench;
+    } else if (lower.contains('saloon') || lower.contains('salon') || lower.contains('hair') || lower.contains('barber') || lower.contains('spa')) {
+      return PhosphorIconsRegular.scissors;
+    } else if (lower.contains('school') || lower.contains('college') || lower.contains('university') || lower.contains('admission')) {
+      return PhosphorIconsRegular.graduationCap;
+    } else if (lower.contains('shop') || lower.contains('mall') || lower.contains('purchase') || lower.contains('buy')) {
+      return PhosphorIconsRegular.bagSimple;
+    } else if (lower.contains('subscri') || lower.contains('netflix') || lower.contains('prime') || lower.contains('spotify') || lower.contains('ott')) {
+      return PhosphorIconsRegular.television;
+    } else if (lower.contains('travel') || lower.contains('trip') || lower.contains('tour') || lower.contains('flight') || lower.contains('train') || lower.contains('bus') || lower.contains('taxi') || lower.contains('uber') || lower.contains('ola')) {
+      return PhosphorIconsRegular.airplaneTilt;
+    } else if (lower.contains('tuition') || lower.contains('coaching') || lower.contains('class') || lower.contains('course')) {
+      return PhosphorIconsRegular.student;
+    } else if (lower.contains('unplanned') || lower.contains('emergency') || lower.contains('penalty') || lower.contains('fine')) {
+      return PhosphorIconsRegular.warningCircle;
+    } else if (lower.contains('watch') || lower.contains('clock')) {
+      return PhosphorIconsRegular.watch;
     }
+    return PhosphorIconsRegular.tag;
   }
 
-  Color get _iconBgColor {
-    switch (item.category) {
-      case ExpenseCategory.foodDining:
-        return const Color(0xFFFEF3C7); // Amber 100
-      case ExpenseCategory.officeSupplies:
-        return const Color(0xFFEEF2FF); // Indigo 50
-      case ExpenseCategory.subscription:
-        return const Color(0xFFFEE2E2); // Red 100
-      case ExpenseCategory.transportation:
-        return const Color(0xFFCCFBF1); // Teal 100
-      default:
-        return AppColors.slate100;
+  Color _getCategoryBgColor(String catName, String title) {
+    final lower = '$catName $title'.toLowerCase().trim();
+    if (lower.contains('bill')) {
+      return const Color(0xFFE0F2FE); // Light Sky
+    } else if (lower.contains('book')) {
+      return const Color(0xFFFEF3C7); // Light Amber
+    } else if (lower.contains('cinema')) {
+      return const Color(0xFFFCE7F3); // Light Pink
+    } else if (lower.contains('cloth')) {
+      return const Color(0xFFEDE9FE); // Light Purple
+    } else if (lower.contains('doctor')) {
+      return const Color(0xFFFEE2E2); // Light Red
+    } else if (lower.contains('eat') || lower.contains('party') || lower.contains('food')) {
+      return const Color(0xFFFFEDD5); // Light Orange
+    } else if (lower.contains('game') || lower.contains('entertainment')) {
+      return const Color(0xFFF3E8FF); // Light Violet
+    } else if (lower.contains('grocery') || lower.contains('carrot')) {
+      return const Color(0xFFDCFCE7); // Light Mint/Green
+    } else if (lower.contains('internet') || lower.contains('wifi')) {
+      return const Color(0xFFEDE9FE); // Light Indigo/Purple
+    } else if (lower.contains('lab') || lower.contains('test')) {
+      return const Color(0xFFFEE2E2); // Light Rose
+    } else if (lower.contains('lpg') || lower.contains('gas')) {
+      return const Color(0xFFFFEDD5); // Light Amber/Orange
+    } else if (lower.contains('medicin') || lower.contains('pharma') || lower.contains('pill')) {
+      return const Color(0xFFE0E7FF); // Light Indigo
+    } else if (lower.contains('mobile phone') || (lower.contains('mobile') && !lower.contains('recharge'))) {
+      return const Color(0xFFDBEAFE); // Light Blue
+    } else if (lower.contains('parking')) {
+      return const Color(0xFFE2E8F0); // Light Slate
+    } else if (lower.contains('petrol') || lower.contains('fuel')) {
+      return const Color(0xFFFEF3C7); // Light Yellow
+    } else if (lower.contains('recharge')) {
+      return const Color(0xFFDBEAFE); // Light Sky Blue
+    } else if (lower.contains('repair') || lower.contains('service')) {
+      return const Color(0xFFFFEDD5); // Light Warm Orange
+    } else if (lower.contains('saloon') || lower.contains('salon')) {
+      return const Color(0xFFFCE7F3); // Light Rose Pink
+    } else if (lower.contains('school') || lower.contains('college')) {
+      return const Color(0xFFDCFCE7); // Light Emerald
+    } else if (lower.contains('shop')) {
+      return const Color(0xFFFEE2E2); // Light Coral
+    } else if (lower.contains('subscri')) {
+      return const Color(0xFFEDE9FE); // Light Purple
+    } else if (lower.contains('travel')) {
+      return const Color(0xFFCCFBF1); // Light Teal
+    } else if (lower.contains('tuition')) {
+      return const Color(0xFFE0F2FE); // Light Sky
+    } else if (lower.contains('unplanned')) {
+      return const Color(0xFFFFE4E6); // Light Rose Red
+    } else if (lower.contains('watch')) {
+      return const Color(0xFFF1F5F9); // Light Gray
     }
+    return const Color(0xFFF1F5F9); // Default Light Slate
   }
 
-  Color get _iconColor {
-    switch (item.category) {
-      case ExpenseCategory.foodDining:
-        return const Color(0xFFB45309); // Amber 700
-      case ExpenseCategory.officeSupplies:
-        return AppColors.secondary;
-      case ExpenseCategory.subscription:
-        return AppColors.error;
-      case ExpenseCategory.transportation:
-        return AppColors.primary;
-      default:
-        return AppColors.slate600;
+  Color _getCategoryIconColor(String catName, String title) {
+    final lower = '$catName $title'.toLowerCase().trim();
+    if (lower.contains('bill')) {
+      return const Color(0xFF0284C7);
+    } else if (lower.contains('book')) {
+      return const Color(0xFFD97706);
+    } else if (lower.contains('cinema')) {
+      return const Color(0xFFDB2777);
+    } else if (lower.contains('cloth')) {
+      return const Color(0xFF7C3AED);
+    } else if (lower.contains('doctor')) {
+      return const Color(0xFFDC2626);
+    } else if (lower.contains('eat') || lower.contains('party') || lower.contains('food')) {
+      return const Color(0xFFEA580C);
+    } else if (lower.contains('game') || lower.contains('entertainment')) {
+      return const Color(0xFF9333EA);
+    } else if (lower.contains('grocery') || lower.contains('carrot')) {
+      return const Color(0xFF16A34A);
+    } else if (lower.contains('internet') || lower.contains('wifi')) {
+      return const Color(0xFF6366F1);
+    } else if (lower.contains('lab') || lower.contains('test')) {
+      return const Color(0xFFE11D48);
+    } else if (lower.contains('lpg') || lower.contains('gas')) {
+      return const Color(0xFFEA580C);
+    } else if (lower.contains('medicin') || lower.contains('pharma') || lower.contains('pill')) {
+      return const Color(0xFF4F46E5);
+    } else if (lower.contains('mobile phone') || (lower.contains('mobile') && !lower.contains('recharge'))) {
+      return const Color(0xFF2563EB);
+    } else if (lower.contains('parking')) {
+      return const Color(0xFF475569);
+    } else if (lower.contains('petrol') || lower.contains('fuel')) {
+      return const Color(0xFFCA8A04);
+    } else if (lower.contains('recharge')) {
+      return const Color(0xFF0284C7);
+    } else if (lower.contains('repair') || lower.contains('service')) {
+      return const Color(0xFFD97706);
+    } else if (lower.contains('saloon') || lower.contains('salon')) {
+      return const Color(0xFFBE185D);
+    } else if (lower.contains('school') || lower.contains('college')) {
+      return const Color(0xFF059669);
+    } else if (lower.contains('shop')) {
+      return const Color(0xFFE11D48);
+    } else if (lower.contains('subscri')) {
+      return const Color(0xFF7C3AED);
+    } else if (lower.contains('travel')) {
+      return const Color(0xFF0D9488);
+    } else if (lower.contains('tuition')) {
+      return const Color(0xFF0369A1);
+    } else if (lower.contains('unplanned')) {
+      return const Color(0xFFE11D48);
+    } else if (lower.contains('watch')) {
+      return const Color(0xFF334155);
     }
-  }
-
-  String get _amountFormatted {
-    final rupees = item.amountMinor ~/ 100;
-    return '-₹$rupees';
+    return const Color(0xFF0F766E);
   }
 
   void _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
+    final currency = ref.read(currencyProvider);
     final rupees = item.amountMinor ~/ 100;
     showDialog(
       context: context,
@@ -150,7 +269,6 @@ class RecentExpenseTile extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            // Expense Details Preview Card
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -164,13 +282,14 @@ class RecentExpenseTile extends ConsumerWidget {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: _iconBgColor,
+                      color: _getCategoryBgColor(item.categoryName, item.title),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
                       child: PhosphorIcon(
-                        _icon,
-                        color: _iconColor,
+                        _getCategoryIcon(item.categoryName, item.title),
+                        color: _getCategoryIconColor(
+                            item.categoryName, item.title),
                         size: 20,
                       ),
                     ),
@@ -205,7 +324,7 @@ class RecentExpenseTile extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '₹$rupees',
+                        '${currency.symbol}$rupees',
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -214,7 +333,9 @@ class RecentExpenseTile extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        item.tag == ExpenseTag.needed ? 'Needed' : 'Discretionary',
+                        item.tag == ExpenseTag.needed
+                            ? 'Needed'
+                            : 'Not Needed',
                         style: GoogleFonts.inter(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
@@ -238,7 +359,8 @@ class RecentExpenseTile extends ConsumerWidget {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.slate200),
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(
                     'Cancel',
@@ -276,7 +398,8 @@ class RecentExpenseTile extends ConsumerWidget {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(
                     'Delete',
@@ -293,189 +416,242 @@ class RecentExpenseTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currency = ref.watch(currencyProvider);
     final displayCategory = _resolveExpenseTypeName(ref);
+    final rupees = item.amountMinor ~/ 100;
+    final iconBg = _getCategoryBgColor(item.categoryName, item.title);
+    final iconColor = _getCategoryIconColor(item.categoryName, item.title);
+    final iconData = _getCategoryIcon(item.categoryName, item.title);
 
-    return InkWell(
-      onTap: onTap ??
-          () {
-            context.push(AppRoutes.expenseDetail, extra: item);
-          },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.slate400.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-          border: Border.all(color: const Color(0xFFF1F5F9)),
-        ),
-        child: Row(
-        children: [
-          // Category Icon
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: _iconBgColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: PhosphorIcon(
-                _icon,
-                color: _iconColor,
-                size: 22,
-              ),
-            ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(width: 12),
-
-          // Title & Category/Time
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap ??
+              () {
+                context.push(AppRoutes.expenseDetail, extra: item);
+              },
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+            child: Row(
               children: [
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.neutralDark,
+                // 1. Category Icon inside Pastel Rounded Container
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Center(
+                    child: PhosphorIcon(
+                      iconData,
+                      color: iconColor,
+                      size: 22,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        displayCategory,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.slate500,
-                        ),
+                const SizedBox(width: 12),
+
+                // 2. Center Content: 2-Line Layout preventing truncation
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Top Row: Title + Amount
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.neutralDark,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${currency.symbol}$rupees',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.neutralDark,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        '•',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.slate300,
-                        ),
+                      const SizedBox(height: 4),
+
+                      // Bottom Row: Subtitle + Tag Pill
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.timeFormatted.isNotEmpty
+                                  ? '$displayCategory  •  ${item.timeFormatted}'
+                                  : displayCategory,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.slate400,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: item.tag == ExpenseTag.needed
+                                  ? const Color(0xFFD1FAE5)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              item.tag == ExpenseTag.needed ? 'Needed' : 'Not Needed',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: item.tag == ExpenseTag.needed
+                                    ? const Color(0xFF059669)
+                                    : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    Flexible(
-                      child: Text(
-                        item.timeFormatted,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.slate400,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+
+                // 3. Prominent 3-Dots Menu Button (Far Right, zero dead space)
+                if (showActions) ...[
+                  const SizedBox(width: 2),
+                  SizedBox(
+                    width: 28,
+                    height: 38,
+                    child: PopupMenuButton<String>(
+                      icon: const PhosphorIcon(
+                        PhosphorIconsBold.dotsThreeVertical,
+                        color: AppColors.slate500,
+                        size: 20,
+                      ),
+                      padding: EdgeInsets.zero,
+                      color: Colors.white,
+                      surfaceTintColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      onSelected: (action) {
+                        if (action == 'edit') {
+                          AddExpenseDialog.show(context, existingExpense: item);
+                        } else if (action == 'delete') {
+                          _showDeleteConfirmation(context, ref);
+                        } else if (action == 'details') {
+                          context.push(AppRoutes.expenseDetail, extra: item);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              const PhosphorIcon(
+                                PhosphorIconsRegular.pencilSimple,
+                                size: 16,
+                                color: AppColors.slate700,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Edit',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.neutralDark,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'details',
+                          child: Row(
+                            children: [
+                              const PhosphorIcon(
+                                PhosphorIconsRegular.eye,
+                                size: 16,
+                                color: AppColors.slate700,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'View Details',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.neutralDark,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              const PhosphorIcon(
+                                PhosphorIconsRegular.trash,
+                                size: 16,
+                                color: AppColors.error,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Delete',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-          const SizedBox(width: 8),
-
-          // Amount & Tag Pill or Action Buttons
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _amountFormatted,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.neutralDark,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: item.tag == ExpenseTag.needed
-                          ? AppColors.tertiaryContainer.withValues(alpha: 0.6)
-                          : AppColors.inputFieldBg,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      item.tag == ExpenseTag.needed ? 'Needed' : 'Not Needed',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: item.tag == ExpenseTag.needed
-                            ? AppColors.tertiaryDark
-                            : AppColors.slate500,
-                      ),
-                    ),
-                  ),
-                  if (showActions) ...[
-                    const SizedBox(width: 6),
-                    InkWell(
-                      onTap: () {
-                        AddExpenseDialog.show(context, existingExpense: item);
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppColors.slate100,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const PhosphorIcon(
-                          PhosphorIconsRegular.pencilSimple,
-                          size: 14,
-                          color: AppColors.slate700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    InkWell(
-                      onTap: () => _showDeleteConfirmation(context, ref),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppColors.errorContainer.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const PhosphorIcon(
-                          PhosphorIconsRegular.trash,
-                          size: 14,
-                          color: AppColors.error,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
-    ),
-  );
+    );
   }
 }
+
+
+
+

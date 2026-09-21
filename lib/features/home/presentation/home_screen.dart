@@ -7,6 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/routing/app_router.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/core/widgets/compact_month_year_picker_dialog.dart';
+import 'package:mobymoney/core/widgets/shimmer_loading.dart';
 import 'package:mobymoney/features/ai_chat/presentation/ai_chat_screen.dart';
 import 'package:mobymoney/features/analytics/presentation/analytics_screen.dart';
 import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
@@ -17,6 +18,7 @@ import 'package:mobymoney/features/dashboard/presentation/widgets/dashboard_head
 import 'package:mobymoney/features/dashboard/presentation/widgets/recent_expense_tile.dart';
 import 'package:mobymoney/features/dashboard/presentation/widgets/spending_trends_widget.dart';
 import 'package:mobymoney/features/expenses/presentation/expenses_screen.dart';
+import 'package:mobymoney/features/settings/presentation/widgets/profile_drawer.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -26,6 +28,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentNavIndex = 0;
 
   String _getGreeting() {
@@ -64,19 +67,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = authState.asData?.value;
     final dashboardAsync = ref.watch(dashboardSummaryProvider);
     final selectedDate = ref.watch(selectedDateProvider);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const ProfileDrawer(),
       backgroundColor: AppColors.background,
       appBar: _currentNavIndex == 0
           ? DashboardHeaderAppBar(
               user: user,
+              onMenuTap: () {
+                _scaffoldKey.currentState?.openDrawer();
+              },
               onAvatarTap: () {
-                context.push(AppRoutes.settings);
+                _scaffoldKey.currentState?.openDrawer();
               },
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: _currentNavIndex <= 2
+      floatingActionButton: (_currentNavIndex <= 2 && !isKeyboardOpen)
           ? FloatingActionButton.extended(
               onPressed: () => AddExpenseBottomSheet.show(context),
               backgroundColor: AppColors.primary,
@@ -109,11 +118,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) {
     switch (_currentNavIndex) {
       case 1:
-        return const ExpensesScreen();
+        return ExpensesScreen(
+          onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
+        );
       case 2:
-        return const AnalyticsScreen();
+        return AnalyticsScreen(
+          onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
+        );
       case 3:
-        return const AiChatScreen();
+        return AiChatScreen(
+          onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
+        );
       default:
         return _buildHomeDashboard(dashboardAsync, user, selectedDate);
     }
@@ -125,11 +140,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     DateTime selectedDate,
   ) {
     return dashboardAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-        ),
-      ),
+      loading: () => const HomeScreenShimmer(),
       error: (err, stack) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -174,7 +185,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () async {
-            await ref.read(dashboardSummaryProvider.notifier).refresh();
+            ref.read(homeSelectedDateProvider.notifier).updateDate(DateTime.now());
+            await ref.read(dashboardSummaryProvider.notifier).loadDashboardData(date: DateTime.now());
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(
@@ -314,14 +326,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'TOTAL SPENDING',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
-                                color: const Color(0xFFCCFBF1),
-                              ),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const PhosphorIcon(
+                                    PhosphorIconsBold.wallet,
+                                    color: Color(0xFFCCFBF1),
+                                    size: 13,
+                                  ),
+                                ),
+                                const SizedBox(width: 7),
+                                Text(
+                                  'TOTAL SPENDING',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8,
+                                    color: const Color(0xFFCCFBF1),
+                                  ),
+                                ),
+                              ],
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -351,7 +380,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  '₹${NumberFormat('#,##,###').format(totalRupees)}',
+                                  '₹ ${NumberFormat('#,##,###').format(totalRupees)}',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w800,
@@ -407,14 +436,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      'DAILY AVERAGE',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.6,
-                                        color: Colors.white70,
-                                      ),
+                                    Row(
+                                      children: [
+                                        const PhosphorIcon(
+                                          PhosphorIconsBold.trendUp,
+                                          size: 11,
+                                          color: Colors.white70,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'DAILY AVERAGE',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.6,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                     const SizedBox(height: 4),
                                     RichText(
@@ -458,13 +497,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          'Essential Ratio',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white70,
-                                          ),
+                                        Row(
+                                          children: [
+                                            const PhosphorIcon(
+                                              PhosphorIconsBold.chartPieSlice,
+                                              size: 11,
+                                              color: Colors.white70,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Essential Ratio',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                         Text(
                                           '${summary.essentialPercentage}%',
@@ -541,27 +590,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.tertiary,
-                                          shape: BoxShape.circle,
+                                  Flexible(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.tertiaryContainer,
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                          ),
+                                          child: const PhosphorIcon(
+                                            PhosphorIconsBold.shieldCheck,
+                                            color: AppColors.tertiaryDark,
+                                            size: 12,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'Essential',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.slate600,
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            'Essential',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.slate600,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
+                                  const SizedBox(width: 4),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 6, vertical: 2),
@@ -627,32 +689,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.secondary,
-                                          shape: BoxShape.circle,
+                                  Flexible(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.discretionaryContainer,
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                          ),
+                                          child: const PhosphorIcon(
+                                            PhosphorIconsBold.sparkle,
+                                            color: AppColors.discretionaryDark,
+                                            size: 12,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'Discretionary',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.slate600,
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            'Discretionary',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.slate600,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
+                                  const SizedBox(width: 4),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: AppColors.secondaryContainer,
+                                      color: AppColors.discretionaryContainer,
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
@@ -660,7 +735,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       style: GoogleFonts.inter(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.secondaryDark,
+                                        color: AppColors.discretionaryDark,
                                       ),
                                     ),
                                   ),
@@ -732,7 +807,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          setState(() => _currentNavIndex = 1);
+                          context.push(AppRoutes.allExpenses);
                         },
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,

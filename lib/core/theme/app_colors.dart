@@ -22,6 +22,13 @@ abstract class AppColors {
   static const Color tertiaryContainer = Color(0xFFD1FAE5);
   static const Color onTertiaryContainer = Color(0xFF064E3B);
 
+  // Discretionary (Warm Orange Accent)
+  static const Color discretionary = Color(0xFFF97316);
+  static const Color discretionaryLight = Color(0xFFFB923C);
+  static const Color discretionaryDark = Color(0xFFEA580C);
+  static const Color discretionaryContainer = Color(0xFFFFEDD5);
+  static const Color onDiscretionaryContainer = Color(0xFF9A3412);
+
   // Neutral & Dark Spectrum
   static const Color neutralDark = Color(0xFF0F172A); // Slate 900
   static const Color slate800 = Color(0xFF1E293B);

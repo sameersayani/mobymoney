@@ -205,8 +205,17 @@ class DailyExpenseResponseModel {
         '1 ${DateFormat('MMM').format(selectedDate)} – $daysInMonth ${DateFormat('MMM yyyy').format(selectedDate)}';
     final monthLabel = DateFormat('MMM yyyy').format(selectedDate);
 
-    // Build recent expense list
+    // Build recent expense list - sorted with newest/last added expense first
     final recentList = items.map((e) => e.toRecentExpenseItem()).toList();
+    recentList.sort((a, b) {
+      if (a.rawDate != null && b.rawDate != null) {
+        final cmp = b.rawDate!.compareTo(a.rawDate!);
+        if (cmp != 0) return cmp;
+      }
+      final idA = int.tryParse(a.id) ?? 0;
+      final idB = int.tryParse(b.id) ?? 0;
+      return idB.compareTo(idA);
+    });
 
     // Group items into days for weekly spending trend
     final now = DateTime.now();

@@ -6,6 +6,7 @@ import 'package:mobymoney/features/analytics/presentation/analytics_screen.dart'
 import 'package:mobymoney/features/authentication/presentation/login_screen.dart';
 import 'package:mobymoney/features/authentication/presentation/register_screen.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
+import 'package:mobymoney/features/expenses/presentation/all_expenses_screen.dart';
 import 'package:mobymoney/features/expenses/presentation/expense_detail_screen.dart';
 import 'package:mobymoney/features/expenses/presentation/expenses_screen.dart';
 import 'package:mobymoney/features/home/presentation/home_screen.dart';
@@ -47,6 +48,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ExpensesScreen(),
       ),
       GoRoute(
+        path: AppRoutes.allExpenses,
+        name: 'allExpenses',
+        builder: (context, state) => const AllExpensesScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.expenseDetail,
         name: 'expenseDetail',
         builder: (context, state) {
@@ -84,6 +90,7 @@ abstract class AppRoutes {
   static const register = '/register';
   static const home = '/';
   static const expenses = '/expenses';
+  static const allExpenses = '/all-expenses';
   static const expenseDetail = '/expense-detail';
   static const analytics = '/analytics';
   static const aiChat = '/ai-chat';

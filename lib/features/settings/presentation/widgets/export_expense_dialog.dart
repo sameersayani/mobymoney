@@ -54,10 +54,7 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
 
       if (mounted && file != null) {
         setState(() => _downloadedFile = file);
-        AppSnackBar.showSuccess(
-          context,
-          'Excel report (.XLSX) downloaded successfully!',
-        );
+        _showDownloadNotification(file);
       }
     } catch (e) {
       if (mounted) {
@@ -67,6 +64,79 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
         );
       }
     }
+  }
+
+  void _showDownloadNotification(File file) {
+    final fileName = file.path.split(Platform.pathSeparator).last;
+    final fileSize = file.existsSync() ? _formatFileSize(file.lengthSync()) : '';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 8),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        content: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFF16A34A),
+                shape: BoxShape.circle,
+              ),
+              child: const PhosphorIcon(
+                PhosphorIconsBold.downloadSimple,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'File Downloaded ($fileSize)',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                _openFile();
+              },
+              child: Text(
+                'OPEN',
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF4ADE80),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _openFile() async {
@@ -392,7 +462,7 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
 
             const SizedBox(height: 20),
 
-            // 4. Downloaded Success Card with File Actions
+            // 4. Downloaded Success Card with File Actions & Location
             if (_downloadedFile != null) ...[
               Container(
                 padding: const EdgeInsets.all(14),
@@ -402,6 +472,7 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
                   border: Border.all(color: const Color(0xFFBBF7D0)),
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
@@ -423,7 +494,7 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Report Ready (.XLSX)',
+                                'Report Downloaded Successfully!',
                                 style: GoogleFonts.inter(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -445,6 +516,87 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+
+                    // File Manager Location Guide
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFDCFCE7)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const PhosphorIcon(
+                                PhosphorIconsBold.folderOpen,
+                                size: 14,
+                                color: Color(0xFF15803D),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Where to find it in File Manager:',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF15803D),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '• Android: ',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.neutralDark,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'Files / File Manager > Downloads (or Documents)',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: AppColors.slate600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '• iOS (iPhone): ',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.neutralDark,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'Files App > On My iPhone > MobyMoney',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: AppColors.slate600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -487,7 +639,7 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
                               color: Color(0xFF16A34A),
                             ),
                             label: Text(
-                              'Share',
+                              'Share / Save',
                               style: GoogleFonts.inter(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,

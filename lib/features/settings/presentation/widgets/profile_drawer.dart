@@ -15,19 +15,21 @@ import 'package:mobymoney/features/settings/presentation/widgets/currency_select
 import 'package:mobymoney/features/settings/presentation/widgets/export_expense_dialog.dart';
 import 'package:mobymoney/features/settings/presentation/widgets/privacy_policy_dialog.dart';
 
-class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({super.key});
+/// Production-ready slide-out Profile Drawer for MobyMoney
+class ProfileDrawer extends ConsumerWidget {
+  const ProfileDrawer({super.key});
 
   Widget _buildAvatar(UserModel? user) {
     if (user?.picture != null && user!.picture!.isNotEmpty) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         child: Image.network(
           user.picture!,
-          width: 80,
-          height: 80,
+          width: 56,
+          height: 56,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(user),
+          errorBuilder: (context, error, stackTrace) =>
+              _buildFallbackAvatar(user),
         ),
       );
     }
@@ -35,10 +37,11 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildFallbackAvatar(UserModel? user) {
-    final initial = user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'A';
+    final initial =
+        user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'A';
     return Container(
-      width: 80,
-      height: 80,
+      width: 56,
+      height: 56,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
@@ -48,11 +51,11 @@ class SettingsScreen extends ConsumerWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.25),
-            blurRadius: 12,
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
@@ -61,7 +64,7 @@ class SettingsScreen extends ConsumerWidget {
         child: Text(
           initial,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 34,
+            fontSize: 24,
             fontWeight: FontWeight.w800,
             color: Colors.white,
           ),
@@ -106,6 +109,9 @@ class SettingsScreen extends ConsumerWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
+              if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                Navigator.of(context).pop(); // Close drawer
+              }
               await ref.read(authStateProvider.notifier).logout();
               if (context.mounted) {
                 context.go(AppRoutes.login);
@@ -115,8 +121,10 @@ class SettingsScreen extends ConsumerWidget {
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             ),
             child: Text(
               'Logout',
@@ -135,83 +143,29 @@ class SettingsScreen extends ConsumerWidget {
     final typesAsync = ref.watch(expenseTypesProvider);
     final categoriesCount = typesAsync.asData?.value.length ?? 0;
     final dashboardAsync = ref.watch(dashboardSummaryProvider);
-    final expenseCount = dashboardAsync.asData?.value.recentExpenses.length ?? 0;
+    final expenseCount =
+        dashboardAsync.asData?.value.recentExpenses.length ?? 0;
     final currency = ref.watch(currencyProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const PhosphorIcon(
-            PhosphorIconsRegular.arrowLeft,
-            color: AppColors.neutralDark,
-            size: 22,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Profile & Settings',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.neutralDark,
-          ),
-        ),
-        centerTitle: false,
+    return Drawer(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(28)),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+      child: SafeArea(
         child: Column(
           children: [
-            // 1. Sleek Profile Hero Card
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: AppColors.slate200.withValues(alpha: 0.8),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+            // 1. Drawer Header (Profile Section)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      // Avatar
-                      Stack(
-                        alignment: Alignment.bottomRight,
-                        children: [
-                          _buildAvatar(user),
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            child: const PhosphorIcon(
-                              PhosphorIconsFill.camera,
-                              size: 12,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 16),
-
-                      // User info
+                      _buildAvatar(user),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,11 +174,13 @@ class SettingsScreen extends ConsumerWidget {
                               children: [
                                 Flexible(
                                   child: Text(
-                                    user?.name.isNotEmpty == true ? user!.name : 'Alex Morgan',
+                                    user?.name.isNotEmpty == true
+                                        ? user!.name
+                                        : 'Alex Morgan',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 18,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.w800,
                                       color: AppColors.neutralDark,
                                     ),
@@ -232,7 +188,8 @@ class SettingsScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: AppColors.primaryContainer,
                                     borderRadius: BorderRadius.circular(6),
@@ -240,7 +197,7 @@ class SettingsScreen extends ConsumerWidget {
                                   child: Text(
                                     'PRO',
                                     style: GoogleFonts.inter(
-                                      fontSize: 10,
+                                      fontSize: 9,
                                       fontWeight: FontWeight.w800,
                                       color: AppColors.primaryDark,
                                     ),
@@ -248,7 +205,7 @@ class SettingsScreen extends ConsumerWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: 2),
                             Text(
                               user?.email.isNotEmpty == true
                                   ? user!.email
@@ -256,12 +213,12 @@ class SettingsScreen extends ConsumerWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
-                                fontSize: 12.5,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w400,
                                 color: AppColors.slate500,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 6),
                             Row(
                               children: [
                                 Container(
@@ -272,11 +229,11 @@ class SettingsScreen extends ConsumerWidget {
                                     shape: BoxShape.circle,
                                   ),
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 5),
                                 Text(
-                                  'Sync Active (Google Cloud)',
+                                  'Sync Active',
                                   style: GoogleFonts.inter(
-                                    fontSize: 11,
+                                    fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
                                     color: const Color(0xFF10B981),
                                   ),
@@ -289,14 +246,15 @@ class SettingsScreen extends ConsumerWidget {
                     ],
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 16),
 
                   // Mini Stats Strip
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
                       color: AppColors.inputFieldBg,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -313,108 +271,84 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const Divider(color: Color(0xFFF1F5F9), height: 1),
 
-            // 2. Preferences & Management Section
-            _buildSectionHeader('DATA & EXPENSE MANAGEMENT'),
-            const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppColors.slate200.withValues(alpha: 0.8),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
+            // 2. Scrollable Menu Options
+            Expanded(
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 children: [
-                  _buildSettingsTile(
+                  _buildSectionHeader('EXPENSE MANAGEMENT'),
+                  const SizedBox(height: 6),
+                  _buildDrawerTile(
                     context: context,
                     icon: PhosphorIconsRegular.tag,
                     iconColor: AppColors.primary,
                     iconBg: AppColors.primaryContainer,
                     title: 'Expense Types & Categories',
-                    subtitle: 'View and manage expense types',
+                    subtitle: 'Manage custom categories',
                     onTap: () {
+                      Navigator.of(context).pop();
                       context.push(AppRoutes.expenseTypes);
                     },
                   ),
-                  _buildDivider(),
-                  _buildSettingsTile(
+                  _buildDrawerTile(
                     context: context,
                     icon: PhosphorIconsRegular.fileXls,
                     iconColor: const Color(0xFF0284C7),
                     iconBg: const Color(0xFFE0F2FE),
                     title: 'Export Expense Data',
-                    subtitle: 'Generate monthly or full-year Excel reports (XLSX)',
-                    onTap: () => ExportExpenseDialog.show(context),
+                    subtitle: 'Download Excel sheets (XLSX)',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      ExportExpenseDialog.show(context);
+                    },
                   ),
-                  _buildDivider(),
-                  _buildSettingsTile(
+                  _buildDrawerTile(
                     context: context,
                     icon: PhosphorIconsRegular.trash,
                     iconColor: AppColors.error,
                     iconBg: AppColors.errorContainer,
                     title: 'Clear Expense History',
-                    subtitle: 'Bulk delete records for a month or entire year',
-                    onTap: () => ClearExpensesDialog.show(context),
+                    subtitle: 'Bulk delete records safely',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      ClearExpensesDialog.show(context);
+                    },
                   ),
-                  _buildDivider(),
-                  _buildSettingsTile(
+
+                  const SizedBox(height: 14),
+                  _buildSectionHeader('PREFERENCES & SECURITY'),
+                  const SizedBox(height: 6),
+                  _buildDrawerTile(
                     context: context,
                     icon: PhosphorIconsRegular.currencyDollar,
                     iconColor: AppColors.secondary,
                     iconBg: AppColors.secondaryContainer,
                     title: 'Default Currency',
                     subtitle: currency.displayName,
-                    onTap: () => CurrencySelectorDialog.show(context),
+                    onTap: () {
+                      CurrencySelectorDialog.show(context);
+                    },
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // 3. App Settings & Security
-            _buildSectionHeader('APP & SECURITY'),
-            const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppColors.slate200.withValues(alpha: 0.8),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildSettingsTile(
+                  _buildDrawerTile(
                     context: context,
                     icon: PhosphorIconsRegular.shieldCheck,
                     iconColor: const Color(0xFF10B981),
                     iconBg: const Color(0xFFD1FAE5),
                     title: 'Privacy Policy',
                     subtitle: 'View terms & data protection policy',
-                    onTap: () => PrivacyPolicyDialog.show(context),
+                    onTap: () {
+                      PrivacyPolicyDialog.show(context);
+                    },
                   ),
-                  _buildDivider(),
-                  _buildSettingsTile(
+
+                  const SizedBox(height: 14),
+                  _buildSectionHeader('ACCOUNT'),
+                  const SizedBox(height: 6),
+                  _buildDrawerTile(
                     context: context,
                     icon: PhosphorIconsRegular.signOut,
                     iconColor: AppColors.error,
@@ -429,15 +363,16 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 28),
-
-            // App Version Info
-            Text(
-              'MobyMoney v1.0.0 • AI-Powered Finance',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppColors.slate400,
+            // 3. Footer with Version
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Text(
+                'MobyMoney v1.0.0 • AI-Powered Finance',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.slate400,
+                ),
               ),
             ),
           ],
@@ -452,7 +387,7 @@ class SettingsScreen extends ConsumerWidget {
         Text(
           value,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: FontWeight.w800,
             color: AppColors.neutralDark,
           ),
@@ -461,7 +396,7 @@ class SettingsScreen extends ConsumerWidget {
         Text(
           label,
           style: GoogleFonts.inter(
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: FontWeight.w500,
             color: AppColors.slate500,
           ),
@@ -473,40 +408,27 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildVerticalDivider() {
     return Container(
       width: 1,
-      height: 24,
+      height: 20,
       color: AppColors.slate200,
     );
   }
 
   Widget _buildSectionHeader(String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 4),
-        child: Text(
-          title,
-          style: GoogleFonts.inter(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
-            color: AppColors.slate500,
-          ),
+    return Padding(
+      padding: const EdgeInsets.only(left: 10, bottom: 4, top: 4),
+      child: Text(
+        title,
+        style: GoogleFonts.inter(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: AppColors.slate400,
         ),
       ),
     );
   }
 
-  Widget _buildDivider() {
-    return Divider(
-      height: 1,
-      thickness: 1,
-      indent: 64,
-      endIndent: 16,
-      color: AppColors.slate100,
-    );
-  }
-
-  Widget _buildSettingsTile({
+  Widget _buildDrawerTile({
     required BuildContext context,
     required IconData icon,
     required Color iconColor,
@@ -517,60 +439,64 @@ class SettingsScreen extends ConsumerWidget {
     Color? titleColor,
     bool showChevron = true,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: PhosphorIcon(
-                  icon,
-                  color: iconColor,
-                  size: 20,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: PhosphorIcon(
+                    icon,
+                    color: iconColor,
+                    size: 18,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: titleColor ?? AppColors.neutralDark,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: titleColor ?? AppColors.neutralDark,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.slate500,
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.slate500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            if (showChevron)
-              const PhosphorIcon(
-                PhosphorIconsRegular.caretRight,
-                color: AppColors.slate400,
-                size: 16,
-              ),
-          ],
+              if (showChevron)
+                const PhosphorIcon(
+                  PhosphorIconsRegular.caretRight,
+                  color: AppColors.slate300,
+                  size: 14,
+                ),
+            ],
+          ),
         ),
       ),
     );

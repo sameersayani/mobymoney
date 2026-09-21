@@ -10,6 +10,8 @@ import 'package:mobymoney/features/dashboard/presentation/providers/dashboard_pr
 import 'package:mobymoney/features/dashboard/presentation/widgets/add_expense_bottom_sheet.dart';
 import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
 
+import 'package:mobymoney/features/settings/presentation/providers/currency_provider.dart';
+
 class ExpenseDetailScreen extends ConsumerWidget {
   const ExpenseDetailScreen({
     super.key,
@@ -63,8 +65,8 @@ class ExpenseDetailScreen extends ConsumerWidget {
     }
   }
 
-  void _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
-    final rupees = expense.amountMinor ~/ 100;
+  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, String currencySymbol) {
+    final amount = expense.amountMinor ~/ 100;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -165,7 +167,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '₹$rupees',
+                        '$currencySymbol$amount',
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -174,7 +176,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        expense.tag == ExpenseTag.needed ? 'Needed' : 'Discretionary',
+                        expense.tag == ExpenseTag.needed ? 'Needed' : 'Not Needed',
                         style: GoogleFonts.inter(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
@@ -292,16 +294,17 @@ class ExpenseDetailScreen extends ConsumerWidget {
         ) ??
         expense;
 
-    final rupees = currentItem.amountMinor ~/ 100;
+    final currency = ref.watch(currencyProvider);
+    final totalAmount = currentItem.amountMinor ~/ 100;
     final isNeeded = currentItem.tag == ExpenseTag.needed;
     final quantity = currentItem.quantity > 0 ? currentItem.quantity : 1;
-    final unitPriceRupees = (currentItem.unitPriceMinor > 0)
+    final unitPriceAmount = (currentItem.unitPriceMinor > 0)
         ? (currentItem.unitPriceMinor / 100).toStringAsFixed(2)
-        : (rupees / quantity).toStringAsFixed(2);
+        : (totalAmount / quantity).toStringAsFixed(2);
 
     final expenseTypeName = _resolveExpenseTypeName(currentItem, ref);
 
-    // Format Date: DD-MM-YY (e.g. 20-09-26)
+    // Format Date: DD-MM-YY (e.g. 20-09-26 matching image)
     final dateObj = currentItem.rawDate ?? DateTime.now();
     final formattedDate = DateFormat('dd-MM-yy').format(dateObj);
     final formattedTime = DateFormat('hh:mm a').format(dateObj);
@@ -328,27 +331,6 @@ class ExpenseDetailScreen extends ConsumerWidget {
             color: AppColors.neutralDark,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const PhosphorIcon(
-              PhosphorIconsRegular.pencilSimple,
-              color: AppColors.slate700,
-              size: 20,
-            ),
-            onPressed: () {
-              AddExpenseDialog.show(context, existingExpense: currentItem);
-            },
-          ),
-          IconButton(
-            icon: const PhosphorIcon(
-              PhosphorIconsRegular.trash,
-              color: AppColors.error,
-              size: 20,
-            ),
-            onPressed: () => _showDeleteConfirmation(context, ref),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -404,17 +386,6 @@ class ExpenseDetailScreen extends ConsumerWidget {
                       color: AppColors.neutralDark,
                     ),
                   ),
-                  const SizedBox(height: 6),
-
-                  // // Category subtitle
-                  // Text(
-                  //   currentItem.categoryName,
-                  //   style: GoogleFonts.inter(
-                  //     fontSize: 13,
-                  //     fontWeight: FontWeight.w500,
-                  //     color: AppColors.slate500,
-                  //   ),
-                  // ),
                   const SizedBox(height: 15),
 
                   // Big Amount Display
@@ -425,7 +396,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      '₹${NumberFormat('#,##,###').format(rupees)}',
+                      '${currency.symbol}${NumberFormat('#,##,###').format(totalAmount)}',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 34,
                         fontWeight: FontWeight.w800,
@@ -449,56 +420,54 @@ class ExpenseDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-                  // Detail Rows
+                  // Detail Rows matching user screenshot
                   _buildDetailRow(
                     icon: PhosphorIconsRegular.calendarBlank,
                     label: 'Date',
                     value: formattedDate,
                   ),
-                  const SizedBox(height: 14),
+                  const Divider(color: Color(0xFFF1F5F9), height: 24, thickness: 1),
                   _buildDetailRow(
                     icon: PhosphorIconsRegular.clock,
                     label: 'Time',
                     value: formattedTime,
                   ),
-                  const SizedBox(height: 14),
+                  const Divider(color: Color(0xFFF1F5F9), height: 24, thickness: 1),
                   _buildDetailRow(
                     icon: PhosphorIconsRegular.tag,
                     label: 'Expense Type',
                     value: expenseTypeName,
                   ),
-                  const SizedBox(height: 14),
+                  const Divider(color: Color(0xFFF1F5F9), height: 24, thickness: 1),
                   _buildDetailRow(
                     icon: PhosphorIconsRegular.stack,
                     label: 'Quantity Purchased',
                     value: '$quantity',
                   ),
-                  const SizedBox(height: 14),
+                  const Divider(color: Color(0xFFF1F5F9), height: 24, thickness: 1),
                   _buildDetailRow(
                     icon: PhosphorIconsRegular.currencyInr,
                     label: 'Unit Price',
-                    value: '₹$unitPriceRupees',
+                    value: '${currency.symbol}$unitPriceAmount',
                   ),
-                  const SizedBox(height: 14),
+                  const Divider(color: Color(0xFFF1F5F9), height: 24, thickness: 1),
                   _buildDetailRow(
-                    icon: PhosphorIconsRegular.sparkle,
+                    icon: PhosphorIconsRegular.star,
                     label: 'Priority Tag',
                     widgetValue: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isNeeded
-                            ? AppColors.tertiaryContainer.withValues(alpha: 0.6)
-                            : AppColors.slate100,
-                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xFFE6F4EA), // Soft mint green from screenshot
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
                         isNeeded ? 'Needed' : 'Not Needed',
                         style: GoogleFonts.inter(
-                          fontSize: 11,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: isNeeded ? AppColors.tertiaryDark : AppColors.slate600,
+                          color: const Color(0xFF047857), // Teal emerald text from screenshot
                         ),
                       ),
                     ),
@@ -541,7 +510,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _showDeleteConfirmation(context, ref),
+                    onPressed: () => _showDeleteConfirmation(context, ref, currency.symbol),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.errorContainer.withValues(alpha: 0.8),
                       foregroundColor: AppColors.error,
@@ -584,18 +553,29 @@ class ExpenseDetailScreen extends ConsumerWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PhosphorIcon(
-              icon,
-              size: 16,
-              color: AppColors.slate400,
+            // Mint Green Icon Container (matching image)
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE6F4EA), // Soft mint green from image
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Center(
+                child: PhosphorIcon(
+                  icon,
+                  size: 20,
+                  color: const Color(0xFF0F766E), // Emerald/teal green from image
+                ),
+              ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: 14.5,
                 fontWeight: FontWeight.w500,
-                color: AppColors.slate500,
+                color: const Color(0xFF64748B),
               ),
             ),
           ],
@@ -608,10 +588,10 @@ class ExpenseDetailScreen extends ConsumerWidget {
               textAlign: TextAlign.right,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                fontSize: 13,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15.5,
                 fontWeight: FontWeight.w700,
-                color: AppColors.neutralDark,
+                color: const Color(0xFF0F172A),
               ),
             ),
           )

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/core/widgets/app_snack_bar.dart';
+import 'package:mobymoney/core/widgets/shimmer_loading.dart';
 import 'package:mobymoney/features/expenses/domain/models/expense_type_model.dart';
 import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
 
@@ -106,7 +107,7 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
         ),
       ),
       body: expenseTypesAsync.when(
-        loading: () => _buildLoadingSkeleton(),
+        loading: () => const ExpenseTypesScreenShimmer(),
         error: (error, _) => _buildErrorState(error.toString()),
         data: (types) {
           final filteredTypes = _searchQuery.isEmpty
@@ -247,42 +248,15 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
           ),
           const SizedBox(width: 14),
 
-          // Name and ID badge
+          // Name
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.neutralDark,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: item.color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'API ID: ${item.id}',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.slate500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+            child: Text(
+              item.name,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.neutralDark,
+              ),
             ),
           ),
 
@@ -309,64 +283,6 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildLoadingSkeleton() {
-    return ListView.separated(
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-      itemCount: 8,
-      separatorBuilder: (context, index) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        return Container(
-          height: 72,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.slate200),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.slate100,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 140,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: AppColors.slate200,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      width: 70,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: AppColors.slate100,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -724,7 +640,7 @@ class _DeleteExpenseTypeDialogState
       Navigator.of(context).pop();
       AppSnackBar.showSuccess(
         context,
-        'Expense type #${widget.item.id} deleted',
+        'Expense type "${widget.item.name}" deleted',
       );
     } catch (e) {
       if (!mounted) return;
@@ -749,7 +665,7 @@ class _DeleteExpenseTypeDialogState
         ),
       ),
       content: Text(
-        'Are you sure you want to delete "${widget.item.name}" (ID: ${widget.item.id})? This will remove it from the server.',
+        'Are you sure you want to delete "${widget.item.name}"? This category will be removed.',
         style: GoogleFonts.inter(
           fontSize: 14,
           color: AppColors.slate600,

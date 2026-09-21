@@ -17,7 +17,7 @@ class ChartDataNotifier extends AsyncNotifier<ChartDataModel> {
 
   @override
   Future<ChartDataModel> build() async {
-    _currentDate = ref.watch(selectedDateProvider);
+    _currentDate = ref.watch(analyticsSelectedDateProvider);
     return _fetchChartData(date: _currentDate);
   }
 
@@ -30,7 +30,10 @@ class ChartDataNotifier extends AsyncNotifier<ChartDataModel> {
     );
   }
 
-  Future<void> refresh() async {
+  Future<void> refresh({DateTime? date}) async {
+    if (date != null) {
+      _currentDate = date;
+    }
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() => _fetchChartData(date: _currentDate));
   }

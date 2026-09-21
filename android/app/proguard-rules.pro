@@ -19,3 +19,7 @@
 -dontwarn javax.annotation.**
 -keepattributes Signature
 -keepattributes *Annotation*
+
+# Flutter Deferred Components & Play Core (not using dynamic delivery)
+-dontwarn com.google.android.play.core.**
+

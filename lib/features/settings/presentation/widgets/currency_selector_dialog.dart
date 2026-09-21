@@ -67,25 +67,29 @@ class CurrencySelectorDialog extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Select Default Currency',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.neutralDark,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Select Default Currency',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.neutralDark,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Choose currency for display and calculations',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: AppColors.slate500,
+                    Text(
+                      'Choose currency for display and calculations',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppColors.slate500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),

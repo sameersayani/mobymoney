@@ -66,12 +66,14 @@ class _ClearExpensesDialogState extends ConsumerState<ClearExpensesDialog> {
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              'Final Confirmation',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.neutralDark,
+            Expanded(
+              child: Text(
+                'Final Confirmation',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.neutralDark,
+                ),
               ),
             ),
           ],

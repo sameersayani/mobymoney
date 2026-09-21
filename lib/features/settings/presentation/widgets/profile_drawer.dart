@@ -176,7 +176,9 @@ class ProfileDrawer extends ConsumerWidget {
                                   child: Text(
                                     user?.name.isNotEmpty == true
                                         ? user!.name
-                                        : 'Alex Morgan',
+                                        : (user?.email.isNotEmpty == true
+                                            ? user!.email.split('@').first
+                                            : 'User'),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.plusJakartaSans(
@@ -209,7 +211,7 @@ class ProfileDrawer extends ConsumerWidget {
                             Text(
                               user?.email.isNotEmpty == true
                                   ? user!.email
-                                  : 'alex.morgan@mobymoney.com',
+                                  : '',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
@@ -330,6 +332,7 @@ class ProfileDrawer extends ConsumerWidget {
                     title: 'Default Currency',
                     subtitle: currency.displayName,
                     onTap: () {
+                      Navigator.of(context).pop();
                       CurrencySelectorDialog.show(context);
                     },
                   ),

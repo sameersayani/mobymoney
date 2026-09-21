@@ -80,7 +80,12 @@ class AppLogger {
       if (method != null) consoleBuffer.writeln('Method: $method');
       if (url != null) consoleBuffer.writeln('URL: $url');
       if (statusCode != null) consoleBuffer.writeln('Status: $statusCode');
-      if (token != null && token.isNotEmpty) consoleBuffer.writeln('Token: $token');
+      if (token != null && token.isNotEmpty) {
+        final maskedToken = token.length > 10
+            ? '${token.substring(0, 6)}...${token.substring(token.length - 4)}'
+            : '***';
+        consoleBuffer.writeln('Token: Bearer $maskedToken');
+      }
       if (headers != null) consoleBuffer.writeln('Headers: $headers');
       if (data != null) consoleBuffer.writeln('Data: ${_formatJson(data)}');
       consoleBuffer.write('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

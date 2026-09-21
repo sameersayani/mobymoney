@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
+import 'package:mobymoney/features/settings/presentation/providers/currency_provider.dart';
 
-class BarChartWidget extends StatefulWidget {
+class BarChartWidget extends ConsumerStatefulWidget {
   final List<DailySpendingModel> dailyTrend;
   final int budgetCapMinor;
 
@@ -14,10 +16,10 @@ class BarChartWidget extends StatefulWidget {
   });
 
   @override
-  State<BarChartWidget> createState() => _BarChartWidgetState();
+  ConsumerState<BarChartWidget> createState() => _BarChartWidgetState();
 }
 
-class _BarChartWidgetState extends State<BarChartWidget> {
+class _BarChartWidgetState extends ConsumerState<BarChartWidget> {
   int? _hoveredIndex;
 
   @override
@@ -203,18 +205,17 @@ class _BarChartWidgetState extends State<BarChartWidget> {
               if (widget.dailyTrend.isEmpty) {
                 return const SizedBox.shrink();
               }
+              final currency = ref.watch(currencyProvider);
               final peakItem = widget.dailyTrend.reduce((a, b) => a.amountMinor >= b.amountMinor ? a : b);
               final totalMinor = widget.dailyTrend.fold<int>(0, (sum, item) => sum + item.amountMinor);
               final avgMinor = (totalMinor / widget.dailyTrend.length).round();
-              final avgFormatted = avgMinor >= 100000 
-                  ? '₹${(avgMinor / 100000).toStringAsFixed(1)}k' 
-                  : '₹${(avgMinor / 100).toStringAsFixed(0)}';
+              final avgFormatted = currency.formatMinor(avgMinor, compact: true);
 
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Peak: ${peakItem.day} (${peakItem.label})',
+                    'Peak: ${peakItem.day} (${currency.formatMinor(peakItem.amountMinor, compact: true)})',
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

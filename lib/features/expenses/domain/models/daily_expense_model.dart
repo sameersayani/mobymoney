@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:mobymoney/core/constants/app_currency.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
 
 class DailyExpenseItemModel {
@@ -199,6 +200,7 @@ class DailyExpenseResponseModel {
 
   DashboardSummaryModel toDashboardSummary({
     required DateTime selectedDate,
+    AppCurrency currency = AppCurrency.inr,
   }) {
     final daysInMonth = DateTime(selectedDate.year, selectedDate.month + 1, 0).day;
     final activePeriod =
@@ -259,8 +261,8 @@ class DailyExpenseResponseModel {
       final amount = dayAmounts[i] ?? 0;
       final double ratio = amount > 0 ? (amount / maxSpending).clamp(0.0, 1.0) : 0.0;
       final label = amount > 0
-          ? '₹${(amount / 100).toStringAsFixed(0)}'
-          : '₹0';
+          ? currency.formatMinor(amount, compact: true)
+          : '${currency.symbol}0';
 
       final isToday = isCurrentMonth &&
           dayDate.year == now.year &&

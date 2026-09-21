@@ -97,11 +97,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           Expanded(
             child: dashboardAsync.when(
               loading: () => const ExpensesScreenShimmer(),
-              error: (err, stack) => Center(
-                child: Text(
-                  err.toString(),
-                  style: GoogleFonts.inter(color: AppColors.error),
-                ),
+              error: (err, stack) => _ExpensesErrorWidget(
+                error: err,
+                onRetry: () =>
+                    ref.read(expensesSummaryProvider.notifier).refresh(),
               ),
               data: (summary) {
                 // Filter expenses based on search and selected filters
@@ -689,6 +688,211 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Production-grade error state for the Expenses screen
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ExpensesErrorWidget extends StatefulWidget {
+  const _ExpensesErrorWidget({
+    required this.error,
+    required this.onRetry,
+  });
+
+  final Object error;
+  final VoidCallback onRetry;
+
+  @override
+  State<_ExpensesErrorWidget> createState() => _ExpensesErrorWidgetState();
+}
+
+class _ExpensesErrorWidgetState extends State<_ExpensesErrorWidget>
+    with SingleTickerProviderStateMixin {
+  bool _isRetrying = false;
+  late final AnimationController _shakeController;
+  late final Animation<double> _shakeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _shakeAnimation = Tween<double>(begin: 0, end: 8)
+        .chain(CurveTween(curve: Curves.elasticIn))
+        .animate(_shakeController);
+  }
+
+  @override
+  void dispose() {
+    _shakeController.dispose();
+    super.dispose();
+  }
+
+  String _cleanMessage(Object err) {
+    final raw = err.toString();
+    // Strip the "Exception: " / "NetworkException: " prefix added by Dart
+    return raw
+        .replaceFirst(RegExp(r'^Exception:\s*'), '')
+        .replaceFirst(RegExp(r'^NetworkException:\s*'), '');
+  }
+
+  bool _isNetworkError(Object err) {
+    final msg = err.toString().toLowerCase();
+    return msg.contains('timed out') ||
+        msg.contains('internet') ||
+        msg.contains('connection') ||
+        msg.contains('network') ||
+        msg.contains('reach the server');
+  }
+
+  Future<void> _handleRetry() async {
+    // Brief visual feedback before delegating to the notifier
+    setState(() => _isRetrying = true);
+    await Future.delayed(const Duration(milliseconds: 150));
+    widget.onRetry();
+    // Keep the loading indicator for a tick so it feels responsive
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (mounted) setState(() => _isRetrying = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isNetwork = _isNetworkError(widget.error);
+    final message = _cleanMessage(widget.error);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Icon circle ────────────────────────────────────────────────
+            AnimatedBuilder(
+              animation: _shakeAnimation,
+              builder: (context, child) => Transform.translate(
+                offset: Offset(_shakeAnimation.value, 0),
+                child: child,
+              ),
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: isNetwork
+                      ? const Color(0xFFFFF3E0)
+                      : const Color(0xFFFFEBEE),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: PhosphorIcon(
+                    isNetwork
+                        ? PhosphorIconsRegular.wifiSlash
+                        : PhosphorIconsRegular.warning,
+                    size: 36,
+                    color: isNetwork
+                        ? const Color(0xFFF57C00)
+                        : AppColors.error,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ── Title ───────────────────────────────────────────────────────
+            Text(
+              isNetwork ? 'No Connection' : 'Something Went Wrong',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.neutralDark,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 8),
+
+            // ── Message ─────────────────────────────────────────────────────
+            Text(
+              message,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.slate500,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 28),
+
+            // ── Retry button ────────────────────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isRetrying ? null : _handleRetry,
+                icon: _isRetrying
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const PhosphorIcon(
+                        PhosphorIconsRegular.arrowClockwise,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                label: Text(
+                  _isRetrying ? 'Retrying...' : 'Try Again',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor:
+                      AppColors.primary.withValues(alpha: 0.6),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // ── Pull-to-refresh hint ─────────────────────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const PhosphorIcon(
+                  PhosphorIconsRegular.arrowDown,
+                  size: 12,
+                  color: AppColors.slate400,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Or pull down to refresh',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.slate400,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

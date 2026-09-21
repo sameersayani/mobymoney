@@ -24,18 +24,27 @@ class ConnectivityNotifier extends Notifier<ConnectivityStatus> {
   void _startMonitoring() {
     checkConnection();
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+    // 15-second gentle heartbeat interval for production efficiency without battery drain
+    _timer = Timer.periodic(const Duration(seconds: 15), (_) {
       checkConnection();
     });
   }
 
+  /// Verifies actual internet connectivity via DNS lookup with timeout
   static Future<bool> hasInternetAccess() async {
     try {
       final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 4));
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (_) {
-      return false;
+      // Fallback secondary check to Cloudflare DNS
+      try {
+        final result = await InternetAddress.lookup('1.1.1.1')
+            .timeout(const Duration(seconds: 3));
+        return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      } catch (_) {
+        return false;
+      }
     }
   }
 
@@ -54,3 +63,5 @@ class ConnectivityNotifier extends Notifier<ConnectivityStatus> {
     }
   }
 }
+
+

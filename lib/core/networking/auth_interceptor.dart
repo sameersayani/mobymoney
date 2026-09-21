@@ -3,9 +3,10 @@ import '../logging/app_logger.dart';
 import '../storage/secure_storage_service.dart';
 
 class AuthInterceptor extends QueuedInterceptor {
-  AuthInterceptor(this._secureStorage);
+  AuthInterceptor(this._secureStorage, {this.onUnauthorized});
 
   final SecureStorageService _secureStorage;
+  final void Function()? onUnauthorized;
   static const String _requestStartTimeKey = 'request_start_time';
 
   @override
@@ -24,7 +25,7 @@ class AuthInterceptor extends QueuedInterceptor {
     options.headers['Accept'] = 'application/json';
     options.headers['Content-Type'] = 'application/json';
 
-    // Pretty Print Request with single-line token, payload, and URL
+    // Pretty Print Request with masked token, payload, and URL
     AppLogger.logNetworkRequest(
       method: options.method,
       url: options.uri.toString(),
@@ -74,8 +75,10 @@ class AuthInterceptor extends QueuedInterceptor {
     if (err.response?.statusCode == 401) {
       AppLogger.w('Session expired or unauthorized (401). Clearing credentials.', 'AUTH');
       await _secureStorage.clearAll();
+      onUnauthorized?.call();
     }
 
     return handler.next(err);
   }
 }
+

@@ -220,7 +220,11 @@ class SettingsScreen extends ConsumerWidget {
                               children: [
                                 Flexible(
                                   child: Text(
-                                    user?.name.isNotEmpty == true ? user!.name : 'Alex Morgan',
+                                    user?.name.isNotEmpty == true
+                                        ? user!.name
+                                        : (user?.email.isNotEmpty == true
+                                            ? user!.email.split('@').first
+                                            : 'User'),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.plusJakartaSans(
@@ -252,7 +256,7 @@ class SettingsScreen extends ConsumerWidget {
                             Text(
                               user?.email.isNotEmpty == true
                                   ? user!.email
-                                  : 'alex.morgan@mobymoney.com',
+                                  : '',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(

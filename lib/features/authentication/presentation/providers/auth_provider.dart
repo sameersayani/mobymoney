@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/errors/network_exception.dart';
 import '../../../../core/logging/app_logger.dart';
+import '../../../../core/networking/api_client.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../domain/models/auth_response_model.dart';
 import '../../domain/models/user_model.dart';
@@ -31,6 +33,9 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
   AsyncValue<UserModel?> build() {
     // Initial state check
     _checkInitialSession();
+    ApiClient.instance.setOnUnauthorized(() {
+      notifySessionExpired();
+    });
     return const AsyncValue.loading();
   }
 
@@ -88,13 +93,14 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
       final authResponse = await _authRepository.loginWithGoogle(idToken);
       state = AsyncValue.data(authResponse.user);
 
-      // 4. Optionally verify with /api/mobile/auth/me in background
-      try {
-        final meUser = await _authRepository.getMe();
-        state = AsyncValue.data(meUser);
-      } catch (e) {
-        AppLogger.w('Background /api/mobile/auth/me call skipped/failed: $e', 'AUTH');
-      }
+      // 4. Background refresh /api/mobile/auth/me asynchronously (non-blocking)
+      unawaited(
+        _authRepository.getMe().then((meUser) {
+          state = AsyncValue.data(meUser);
+        }).catchError((e) {
+          AppLogger.w('Background /api/mobile/auth/me call skipped/failed: $e', 'AUTH');
+        }),
+      );
 
       return authResponse;
     } on NetworkException catch (e, st) {
@@ -106,6 +112,11 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
       state = AsyncValue.error('Sign-in failed. Please try again.', st);
       return null;
     }
+  }
+
+  /// Called by AuthInterceptor when a 401 Unauthorized response is received
+  void notifySessionExpired() {
+    state = const AsyncValue.data(null);
   }
 
   Future<void> logout() async {

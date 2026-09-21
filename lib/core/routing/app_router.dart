@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobymoney/features/ai_chat/presentation/ai_chat_screen.dart';
 import 'package:mobymoney/features/analytics/presentation/analytics_screen.dart';
 import 'package:mobymoney/features/authentication/presentation/login_screen.dart';
+import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
 import 'package:mobymoney/features/authentication/presentation/register_screen.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
 import 'package:mobymoney/features/expenses/presentation/all_expenses_screen.dart';
@@ -16,11 +17,39 @@ import 'package:mobymoney/features/splash/presentation/splash_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
+class _RouterListenable extends ChangeNotifier {
+  _RouterListenable(Ref ref) {
+    ref.listen(authStateProvider, (_, __) {
+      notifyListeners();
+    });
+  }
+}
+
+final routerListenableProvider = Provider<_RouterListenable>((ref) {
+  return _RouterListenable(ref);
+});
+
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final refreshListenable = ref.watch(routerListenableProvider);
+
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
+    refreshListenable: refreshListenable,
     debugLogDiagnostics: false,
+    redirect: (context, state) {
+      final authState = ref.read(authStateProvider);
+      final isLoggedIn = authState.asData?.value != null;
+      final isAuthRoute = state.matchedLocation == AppRoutes.login ||
+          state.matchedLocation == AppRoutes.register ||
+          state.matchedLocation == AppRoutes.splash;
+
+      // If user is not logged in and not on an auth route, force redirect to Login
+      if (!isLoggedIn && !isAuthRoute) {
+        return AppRoutes.login;
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: AppRoutes.splash,

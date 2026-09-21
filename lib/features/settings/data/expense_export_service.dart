@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:mobymoney/core/constants/app_currency.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
 
 class ExpenseExportService {
@@ -9,6 +10,7 @@ class ExpenseExportService {
     required List<RecentExpenseItemModel> expenses,
     required int year,
     int? month,
+    AppCurrency currency = AppCurrency.inr,
   }) {
     final buffer = StringBuffer();
 
@@ -20,11 +22,11 @@ class ExpenseExportService {
     buffer.writeln('MobyMoney - Expense Report');
     buffer.writeln('Report Period: $periodName');
     buffer.writeln('Generated On: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}');
-    buffer.writeln('Currency: INR (₹)');
+    buffer.writeln('Currency: ${currency.name} (${currency.symbol})');
     buffer.writeln(''); // Empty line
 
     // Column Headers
-    buffer.writeln('ID,Date / Time,Expense Title,Category,Priority Tag,Amount (INR)');
+    buffer.writeln('ID,Date / Time,Expense Title,Category,Priority Tag,Amount (${currency.code})');
 
     int totalMinor = 0;
     int neededMinor = 0;
@@ -50,9 +52,9 @@ class ExpenseExportService {
     buffer.writeln('');
     buffer.writeln('SUMMARY');
     buffer.writeln('Total Expenses Count,${expenses.length}');
-    buffer.writeln('Total Essential Spending (₹),${(neededMinor / 100.0).toStringAsFixed(2)}');
-    buffer.writeln('Total Discretionary Spending (₹),${(discretionaryMinor / 100.0).toStringAsFixed(2)}');
-    buffer.writeln('Grand Total Spending (₹),${(totalMinor / 100.0).toStringAsFixed(2)}');
+    buffer.writeln('Total Essential Spending (${currency.symbol}),${(neededMinor / 100.0).toStringAsFixed(2)}');
+    buffer.writeln('Total Discretionary Spending (${currency.symbol}),${(discretionaryMinor / 100.0).toStringAsFixed(2)}');
+    buffer.writeln('Grand Total Spending (${currency.symbol}),${(totalMinor / 100.0).toStringAsFixed(2)}');
 
     return buffer.toString();
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import '../../../../core/errors/network_exception.dart';
 import '../../../../core/networking/api_client.dart';
@@ -28,9 +29,11 @@ class AuthRepository {
         response.data as Map<String, dynamic>,
       );
 
-      // Persist the backend API access token & user profile securely
-      await _storageService.saveAccessToken(authResponse.accessToken);
-      await _storageService.saveUserData(authResponse.user.toJson());
+      // Persist the backend API access token & user profile in parallel (non-blocking)
+      unawaited(Future.wait([
+        _storageService.saveAccessToken(authResponse.accessToken),
+        _storageService.saveUserData(authResponse.user.toJson()),
+      ]));
 
       return authResponse;
     } on DioException catch (e) {

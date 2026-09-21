@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 enum SnackBarType {
   success,
@@ -21,34 +20,19 @@ class AppSnackBar {
     messenger.hideCurrentSnackBar();
 
     Color bgColor;
-    Color iconColor;
-    Color iconBgColor;
-    IconData icon;
 
     switch (type) {
       case SnackBarType.success:
         bgColor = const Color(0xFF065F46); // Rich emerald green
-        iconColor = Colors.white;
-        iconBgColor = Colors.white.withValues(alpha: 0.20);
-        icon = PhosphorIconsFill.checkCircle;
         break;
       case SnackBarType.error:
         bgColor = const Color(0xFF991B1B);
-        iconColor = Colors.white;
-        iconBgColor = Colors.white.withValues(alpha: 0.20);
-        icon = PhosphorIconsFill.xCircle;
         break;
       case SnackBarType.warning:
         bgColor = const Color(0xFF92400E);
-        iconColor = Colors.white;
-        iconBgColor = Colors.white.withValues(alpha: 0.20);
-        icon = PhosphorIconsFill.warningCircle;
         break;
       case SnackBarType.info:
         bgColor = const Color(0xFF0F766E);
-        iconColor = Colors.white;
-        iconBgColor = Colors.white.withValues(alpha: 0.20);
-        icon = PhosphorIconsFill.info;
         break;
     }
 
@@ -62,7 +46,7 @@ class AppSnackBar {
         duration: duration,
         action: action,
         content: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(14),
@@ -80,30 +64,45 @@ class AppSnackBar {
           ),
           child: Row(
             children: [
+              // App Icon at the start
               Container(
                 width: 26,
                 height: 26,
                 decoration: BoxDecoration(
-                  color: iconBgColor,
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
-                child: Center(
-                  child: PhosphorIcon(
-                    icon,
-                    color: iconColor,
-                    size: 16,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    'assets/images/app_logo.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      size: 16,
+                      color: Color(0xFF0F766E),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
+
+              // Message Text
               Expanded(
                 child: Text(
                   message,
                   style: GoogleFonts.inter(
-                    fontSize: 12.5,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
-                    height: 1.2,
+                    height: 1.25,
                   ),
                 ),
               ),

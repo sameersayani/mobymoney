@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobymoney/core/constants/app_currency.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
 import 'package:mobymoney/features/expenses/data/repositories/daily_expense_repository.dart';
+import 'package:mobymoney/features/settings/presentation/providers/currency_provider.dart';
 
 final dailyExpenseRepositoryProvider = Provider<DailyExpenseRepository>((ref) {
   return DailyExpenseRepository();
@@ -43,12 +45,14 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
   @override
   AsyncValue<DashboardSummaryModel> build() {
     _currentDate = ref.watch(homeSelectedDateProvider);
-    loadDashboardData(date: _currentDate);
+    final currency = ref.watch(currencyProvider);
+    loadDashboardData(date: _currentDate, currency: currency);
     return const AsyncValue.loading();
   }
 
-  Future<void> loadDashboardData({DateTime? date}) async {
+  Future<void> loadDashboardData({DateTime? date, AppCurrency? currency}) async {
     final targetDate = date ?? _currentDate;
+    final AppCurrency targetCurrency = currency ?? ref.read(currencyProvider);
     _currentDate = targetDate;
     state = const AsyncValue.loading();
     try {
@@ -57,7 +61,10 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
         month: targetDate.month,
         year: targetDate.year,
       );
-      final summary = response.toDashboardSummary(selectedDate: targetDate);
+      final summary = response.toDashboardSummary(
+        selectedDate: targetDate,
+        currency: targetCurrency,
+      );
       state = AsyncValue.data(summary);
     } catch (e, st) {
       state = AsyncValue.error(e.toString(), st);
@@ -143,12 +150,14 @@ class ExpensesNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
   @override
   AsyncValue<DashboardSummaryModel> build() {
     _currentDate = ref.watch(expensesSelectedDateProvider);
-    loadExpensesData(date: _currentDate);
+    final currency = ref.watch(currencyProvider);
+    loadExpensesData(date: _currentDate, currency: currency);
     return const AsyncValue.loading();
   }
 
-  Future<void> loadExpensesData({DateTime? date}) async {
+  Future<void> loadExpensesData({DateTime? date, AppCurrency? currency}) async {
     final targetDate = date ?? _currentDate;
+    final AppCurrency targetCurrency = currency ?? ref.read(currencyProvider);
     _currentDate = targetDate;
     state = const AsyncValue.loading();
     try {
@@ -157,7 +166,10 @@ class ExpensesNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
         month: targetDate.month,
         year: targetDate.year,
       );
-      final summary = response.toDashboardSummary(selectedDate: targetDate);
+      final summary = response.toDashboardSummary(
+        selectedDate: targetDate,
+        currency: targetCurrency,
+      );
       state = AsyncValue.data(summary);
     } catch (e, st) {
       state = AsyncValue.error(e.toString(), st);
@@ -236,12 +248,14 @@ class AnalyticsSummaryNotifier extends Notifier<AsyncValue<DashboardSummaryModel
   @override
   AsyncValue<DashboardSummaryModel> build() {
     _currentDate = ref.watch(analyticsSelectedDateProvider);
-    loadAnalyticsData(date: _currentDate);
+    final currency = ref.watch(currencyProvider);
+    loadAnalyticsData(date: _currentDate, currency: currency);
     return const AsyncValue.loading();
   }
 
-  Future<void> loadAnalyticsData({DateTime? date}) async {
+  Future<void> loadAnalyticsData({DateTime? date, AppCurrency? currency}) async {
     final targetDate = date ?? _currentDate;
+    final AppCurrency targetCurrency = currency ?? ref.read(currencyProvider);
     _currentDate = targetDate;
     state = const AsyncValue.loading();
     try {
@@ -250,7 +264,10 @@ class AnalyticsSummaryNotifier extends Notifier<AsyncValue<DashboardSummaryModel
         month: targetDate.month,
         year: targetDate.year,
       );
-      final summary = response.toDashboardSummary(selectedDate: targetDate);
+      final summary = response.toDashboardSummary(
+        selectedDate: targetDate,
+        currency: targetCurrency,
+      );
       state = AsyncValue.data(summary);
     } catch (e, st) {
       state = AsyncValue.error(e.toString(), st);

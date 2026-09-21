@@ -18,6 +18,7 @@ import 'package:mobymoney/features/dashboard/presentation/widgets/dashboard_head
 import 'package:mobymoney/features/dashboard/presentation/widgets/recent_expense_tile.dart';
 import 'package:mobymoney/features/dashboard/presentation/widgets/spending_trends_widget.dart';
 import 'package:mobymoney/features/expenses/presentation/expenses_screen.dart';
+import 'package:mobymoney/features/settings/presentation/providers/currency_provider.dart';
 import 'package:mobymoney/features/settings/presentation/widgets/profile_drawer.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -45,7 +46,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   String _getUserDisplayName(String? fullName) {
-    if (fullName == null || fullName.trim().isEmpty) return 'Alex Morgan';
+    if (fullName == null || fullName.trim().isEmpty) return 'User';
     return fullName.trim();
   }
 
@@ -177,6 +178,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final displayName = _getUserDisplayName(user?.name);
         final formattedSelectedMonth =
             DateFormat('MMM yyyy').format(selectedDate);
+        final currency = ref.watch(currencyProvider);
         final totalRupees = summary.totalSpendingMinor ~/ 100;
         final dailyAvgRupees = summary.dailyAverageMinor ~/ 100;
         final essentialRupees = summary.essentialAmountMinor ~/ 100;
@@ -380,7 +382,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  '₹ ${NumberFormat('#,##,###').format(totalRupees)}',
+                                  '${currency.symbol} ${NumberFormat('#,##,###').format(totalRupees)}',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w800,
@@ -460,7 +462,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       text: TextSpan(
                                         children: [
                                           TextSpan(
-                                            text: '₹${NumberFormat('#,##,###').format(dailyAvgRupees)}',
+                                            text: '${currency.symbol}${NumberFormat('#,##,###').format(dailyAvgRupees)}',
                                             style: GoogleFonts.inter(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w700,
@@ -542,7 +544,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '₹${NumberFormat('#,##,###').format(essentialRupees)} Essential',
+                                      '${currency.symbol}${NumberFormat('#,##,###').format(essentialRupees)} Essential',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.inter(
@@ -644,7 +646,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                '₹${NumberFormat('#,##,###').format(essentialRupees)}',
+                                '${currency.symbol}${NumberFormat('#,##,###').format(essentialRupees)}',
                                 style: GoogleFonts.inter(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w700,
@@ -743,7 +745,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                '₹${NumberFormat('#,##,###').format(discretionaryRupees)}',
+                                '${currency.symbol}${NumberFormat('#,##,###').format(discretionaryRupees)}',
                                 style: GoogleFonts.inter(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w700,

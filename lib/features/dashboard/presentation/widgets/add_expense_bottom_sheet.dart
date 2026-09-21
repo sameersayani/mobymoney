@@ -8,6 +8,7 @@ import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/features/expenses/domain/models/expense_type_model.dart';
 import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
+import 'package:mobymoney/features/settings/presentation/providers/currency_provider.dart';
 import '../../domain/models/dashboard_summary_model.dart';
 import '../providers/dashboard_provider.dart';
 
@@ -1016,6 +1017,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
 
   Widget _buildUnitPriceField() {
     final hasError = _amountError != null;
+    final currency = ref.watch(currencyProvider);
     return Container(
       height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1039,7 +1041,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
       child: Row(
         children: [
           Text(
-            '₹',
+            currency.symbol,
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -1075,6 +1077,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
 
   Widget _buildTotalAmountField() {
     final hasError = _amountError != null;
+    final currency = ref.watch(currencyProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1101,7 +1104,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
           child: Row(
             children: [
               Text(
-                '₹',
+                currency.symbol,
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
+import 'package:mobymoney/features/settings/presentation/providers/currency_provider.dart';
 
-class SpendingTrendsWidget extends StatefulWidget {
+class SpendingTrendsWidget extends ConsumerStatefulWidget {
   const SpendingTrendsWidget({
     super.key,
     required this.weeklyTrend,
@@ -14,10 +16,10 @@ class SpendingTrendsWidget extends StatefulWidget {
   final List<DailySpendingModel> weeklyTrend;
 
   @override
-  State<SpendingTrendsWidget> createState() => _SpendingTrendsWidgetState();
+  ConsumerState<SpendingTrendsWidget> createState() => _SpendingTrendsWidgetState();
 }
 
-class _SpendingTrendsWidgetState extends State<SpendingTrendsWidget> {
+class _SpendingTrendsWidgetState extends ConsumerState<SpendingTrendsWidget> {
   int _selectedIndex = -1;
 
   @override
@@ -32,6 +34,8 @@ class _SpendingTrendsWidgetState extends State<SpendingTrendsWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final currency = ref.watch(currencyProvider);
+
     if (_selectedIndex >= widget.weeklyTrend.length && widget.weeklyTrend.isNotEmpty) {
       _selectedIndex = widget.weeklyTrend.length - 1;
     }
@@ -81,7 +85,7 @@ class _SpendingTrendsWidgetState extends State<SpendingTrendsWidget> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Avg ₹${NumberFormat('#,##,###').format(avgRupees)} / day',
+                    'Avg ${currency.symbol}${NumberFormat('#,##,###').format(avgRupees)} / day',
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -152,7 +156,7 @@ class _SpendingTrendsWidgetState extends State<SpendingTrendsWidget> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                item.label,
+                                currency.formatMinor(item.amountMinor, compact: true),
                                 style: GoogleFonts.inter(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w700,
@@ -241,8 +245,8 @@ class _SpendingTrendsWidgetState extends State<SpendingTrendsWidget> {
                   const Spacer(),
                   Text(
                     selectedItem.isToday
-                        ? '${selectedItem.label} (Today)'
-                        : selectedItem.label,
+                        ? '${currency.formatMinor(selectedItem.amountMinor, compact: true)} (Today)'
+                        : currency.formatMinor(selectedItem.amountMinor, compact: true),
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,

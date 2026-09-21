@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
+import 'package:mobymoney/core/widgets/app_error_widget.dart';
 import 'package:mobymoney/core/widgets/compact_month_year_picker_dialog.dart';
 import 'package:mobymoney/core/widgets/shimmer_loading.dart';
 import 'package:mobymoney/features/analytics/domain/models/chart_data_model.dart';
@@ -79,42 +80,12 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           Expanded(
             child: dashboardAsync.when(
               loading: () => const AnalyticsScreenShimmer(),
-              error: (err, stack) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const PhosphorIcon(
-                        PhosphorIconsRegular.warningCircle,
-                        color: AppColors.error,
-                        size: 36,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        err.toString(),
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(color: AppColors.error),
-                      ),
-                      const SizedBox(height: 14),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          ref.read(analyticsSummaryProvider.notifier).refresh();
-                          ref.read(chartDataProvider.notifier).refresh();
-                        },
-                        icon: const PhosphorIcon(
-                          PhosphorIconsRegular.arrowClockwise,
-                          size: 16,
-                        ),
-                        label: const Text('Retry'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              error: (err, stack) => AppErrorWidget(
+                error: err,
+                onRetry: () {
+                  ref.read(analyticsSummaryProvider.notifier).refresh();
+                  ref.read(chartDataProvider.notifier).refresh();
+                },
               ),
               data: (summary) {
                 final chartData =

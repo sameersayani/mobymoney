@@ -24,7 +24,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   bool _obscurePassword = true;
   bool _rememberMe = true;
-  bool _isFormSubmitting = false;
 
   @override
   void dispose() {
@@ -34,11 +33,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _handleEmailSignIn() {
-    if (_isFormSubmitting) return; // Duplicate-tap guard
-    setState(() => _isFormSubmitting = true);
-
-    _showSuccessFeedback('Signed in successfully');
-    context.go(AppRoutes.home);
+    AppSnackBar.showInfo(
+      context,
+      'Please sign in with Google to access your account.',
+    );
   }
 
   void _handleGoogleSignIn() async {
@@ -241,7 +239,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 // Sign In Primary Button
                 ElevatedButton(
-                  onPressed: (_isFormSubmitting || isGoogleLoading)
+                  onPressed: isGoogleLoading
                       ? null
                       : _handleEmailSignIn,
                   style: ElevatedButton.styleFrom(
@@ -255,35 +253,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: _isFormSubmitting
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Sign In',
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const PhosphorIcon(
-                              PhosphorIconsRegular.arrowRight,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Sign In',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      const PhosphorIcon(
+                        PhosphorIconsRegular.arrowRight,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -314,7 +302,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 // Sign In With Google Button
                 OutlinedButton(
-                  onPressed: (_isFormSubmitting || isGoogleLoading)
+                  onPressed: isGoogleLoading
                       ? null
                       : _handleGoogleSignIn,
                   style: OutlinedButton.styleFrom(

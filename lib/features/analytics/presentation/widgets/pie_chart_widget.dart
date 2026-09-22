@@ -82,67 +82,61 @@ class _PieChartWidgetState extends ConsumerState<PieChartWidget> {
           ),
           const SizedBox(height: 20),
 
-          // Pie Chart Canvas + Center Label
+          // Classic Solid Pie Chart Canvas
           Center(
             child: SizedBox(
-              width: 200,
-              height: 200,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CustomPaint(
-                    size: const Size(200, 200),
-                    painter: _DonutChartPainter(
-                      categories: widget.categories,
-                      totalAmountMinor: total,
-                      selectedIndex: _selectedSliceIndex,
-                    ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _selectedSliceIndex != null
-                            ? widget.categories[_selectedSliceIndex!].categoryName
-                            : 'TOTAL SPEND',
-                        style: GoogleFonts.inter(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: AppColors.slate400,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _selectedSliceIndex != null
-                            ? '${currency.symbol}${NumberFormat('#,##,###').format(widget.categories[_selectedSliceIndex!].amountMinor ~/ 100)}'
-                            : '${currency.symbol}${NumberFormat('#,##,###').format(total ~/ 100)}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.neutralDark,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      if (_selectedSliceIndex != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          '${((widget.categories[_selectedSliceIndex!].amountMinor / (total > 0 ? total : 1)) * 100).toStringAsFixed(1)}%',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: widget.categories[_selectedSliceIndex!].color,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
+              width: 220,
+              height: 220,
+              child: CustomPaint(
+                size: const Size(220, 220),
+                painter: _ClassicPieChartPainter(
+                  categories: widget.categories,
+                  totalAmountMinor: total,
+                  selectedIndex: _selectedSliceIndex,
+                ),
               ),
             ),
           ),
 
-          const SizedBox(height: 24),
+          if (_selectedSliceIndex != null) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: widget.categories[_selectedSliceIndex!].color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: widget.categories[_selectedSliceIndex!].color.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: widget.categories[_selectedSliceIndex!].color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${widget.categories[_selectedSliceIndex!].categoryName}: ${currency.symbol}${NumberFormat('#,##,###').format(widget.categories[_selectedSliceIndex!].amountMinor ~/ 100)} (${((widget.categories[_selectedSliceIndex!].amountMinor / (total > 0 ? total : 1)) * 100).toStringAsFixed(1)}%)',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.neutralDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 20),
           const Divider(color: Color(0xFFF1F5F9), height: 1),
           const SizedBox(height: 12),
 
@@ -179,11 +173,11 @@ class _PieChartWidgetState extends ConsumerState<PieChartWidget> {
                   child: Row(
                     children: [
                       Container(
-                        width: 10,
-                        height: 10,
+                        width: 12,
+                        height: 12,
                         decoration: BoxDecoration(
                           color: cat.color,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(3),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -230,12 +224,12 @@ class _PieChartWidgetState extends ConsumerState<PieChartWidget> {
   }
 }
 
-class _DonutChartPainter extends CustomPainter {
+class _ClassicPieChartPainter extends CustomPainter {
   final List<CategorySpendingData> categories;
   final int totalAmountMinor;
   final int? selectedIndex;
 
-  _DonutChartPainter({
+  _ClassicPieChartPainter({
     required this.categories,
     required this.totalAmountMinor,
     this.selectedIndex,
@@ -248,8 +242,12 @@ class _DonutChartPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     final isSingle = categories.length == 1;
-    const strokeWidth = 24.0;
-    final gapAngle = isSingle ? 0.0 : 0.04;
+
+    // Outer subtle border/shadow for clean look
+    final borderPaint = Paint()
+      ..color = const Color(0xFFE2E8F0)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
 
     double startAngle = -math.pi / 2;
 
@@ -258,42 +256,68 @@ class _DonutChartPainter extends CustomPainter {
       final sweepAngle = (cat.amountMinor / totalAmountMinor) * 2 * math.pi;
       final isSelected = selectedIndex == i;
 
-      final paint = Paint()
+      final slicePaint = Paint()
         ..color = cat.color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = isSelected ? strokeWidth + 6 : strokeWidth
-        ..strokeCap = isSingle ? StrokeCap.butt : StrokeCap.round;
+        ..style = PaintingStyle.fill
+        ..isAntiAlias = true;
 
-      if (isSingle) {
-        canvas.drawArc(
-          Rect.fromCircle(
-            center: center,
-            radius: isSelected ? radius - 10 : radius - 12,
-          ),
-          startAngle,
-          sweepAngle,
-          false,
-          paint,
+      // Slice separation gap line
+      final sliceSeparatorPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = isSingle ? 0.0 : 2.0;
+
+      // Draw solid filled pie wedge
+      if (isSelected) {
+        // Slightly offset the selected slice outward
+        final midAngle = startAngle + (sweepAngle / 2);
+        final offsetDist = 6.0;
+        final sliceCenter = Offset(
+          center.dx + offsetDist * math.cos(midAngle),
+          center.dy + offsetDist * math.sin(midAngle),
         );
-      } else if (sweepAngle > gapAngle) {
-        canvas.drawArc(
-          Rect.fromCircle(
-            center: center,
-            radius: isSelected ? radius - 10 : radius - 12,
-          ),
-          startAngle + (gapAngle / 2),
-          sweepAngle - gapAngle,
-          false,
-          paint,
-        );
+
+        final path = Path()
+          ..moveTo(sliceCenter.dx, sliceCenter.dy)
+          ..arcTo(
+            Rect.fromCircle(center: sliceCenter, radius: radius - 4),
+            startAngle,
+            sweepAngle,
+            false,
+          )
+          ..close();
+
+        canvas.drawPath(path, slicePaint);
+        if (!isSingle) {
+          canvas.drawPath(path, sliceSeparatorPaint);
+        }
+      } else {
+        final path = Path()
+          ..moveTo(center.dx, center.dy)
+          ..arcTo(
+            Rect.fromCircle(center: center, radius: radius - 4),
+            startAngle,
+            sweepAngle,
+            false,
+          )
+          ..close();
+
+        canvas.drawPath(path, slicePaint);
+        if (!isSingle) {
+          canvas.drawPath(path, sliceSeparatorPaint);
+        }
       }
 
       startAngle += sweepAngle;
     }
+
+    if (isSingle) {
+      canvas.drawCircle(center, radius - 4, borderPaint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _DonutChartPainter oldDelegate) {
+  bool shouldRepaint(covariant _ClassicPieChartPainter oldDelegate) {
     return oldDelegate.totalAmountMinor != totalAmountMinor ||
         oldDelegate.selectedIndex != selectedIndex ||
         oldDelegate.categories != categories;

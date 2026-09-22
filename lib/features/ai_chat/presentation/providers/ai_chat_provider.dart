@@ -128,9 +128,19 @@ class AiChatNotifier extends Notifier<AiChatState> {
       final finalReallyNeeded =
           overrideReallyNeeded ?? message.reallyNeeded ?? false;
 
+      // Ensure arguments has the current local date if missing or empty
+      final updatedArgs = Map<String, dynamic>.from(message.arguments!);
+      if (!updatedArgs.containsKey('date') ||
+          updatedArgs['date'] == null ||
+          updatedArgs['date'].toString().trim().isEmpty) {
+        final now = DateTime.now();
+        updatedArgs['date'] =
+            '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      }
+
       final res = await repo.confirmAiClassification(
         operation: message.operation!,
-        arguments: message.arguments!,
+        arguments: updatedArgs,
         reallyNeeded: finalReallyNeeded,
         reason: message.reason,
       );

@@ -967,7 +967,7 @@ class AiChatBubble extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                         ),
                         child: Text(
-                          (message.reallyNeeded ?? false) ? 'Save as needed' : 'Save as needed',
+                          (message.reallyNeeded ?? false) ? 'Save as not needed' : 'Save as needed',
                           style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600),
                         ),
                       ),

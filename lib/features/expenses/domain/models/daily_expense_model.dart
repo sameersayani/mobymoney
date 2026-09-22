@@ -34,17 +34,22 @@ class DailyExpenseItemModel {
     final rawUnitPrice = json['unit_price'] ?? json['price'] ?? 0;
     final int unitPriceMinor = _parseAmountToMinor(rawUnitPrice);
 
-    final rawDate = json['date'] ??
+    // Prioritize timestamp fields that have exact time (createdon, created_at, etc.) over date-only strings
+    final rawDate = json['createdon'] ??
+        json['created_on'] ??
         json['created_at'] ??
         json['createdAt'] ??
-        json['time'] ??
         json['timestamp'] ??
+        json['time'] ??
+        json['date'] ??
         '';
     DateTime parsedDate;
     try {
       final str = rawDate.toString().trim();
       if (str.isNotEmpty) {
-        parsedDate = DateTime.tryParse(str) ?? DateTime.now();
+        final parsed = DateTime.tryParse(str) ?? DateTime.now();
+        // Convert UTC server timestamps (ending in Z or with timezone offset) to device local time
+        parsedDate = parsed.isUtc ? parsed.toLocal() : parsed;
       } else {
         parsedDate = DateTime.now();
       }

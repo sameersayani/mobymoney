@@ -25,7 +25,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
-  bool _isSubmitting = false;
+
 
   @override
   void dispose() {
@@ -36,29 +36,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  void _handleRegister() async {
-    if (_isSubmitting) return;
-
-    if (!_agreeToTerms) {
-      AppSnackBar.showError(
-        context,
-        'Please agree to the Terms of Service & Privacy Policy',
-      );
-      return;
-    }
-
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isSubmitting = true);
-
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-        AppSnackBar.showSuccess(context, 'Account created successfully!');
-        context.go(AppRoutes.home);
-      }
-    }
+  void _handleRegister() {
+    AppSnackBar.showInfo(
+      context,
+      'Please sign in with Google to create and access your account.',
+    );
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +282,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                 // Register Button
                 ElevatedButton(
-                  onPressed: _isSubmitting ? null : _handleRegister,
+                  onPressed: _handleRegister,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -307,35 +292,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Create Account',
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const PhosphorIcon(
-                              PhosphorIconsRegular.arrowRight,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Create Account',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      const PhosphorIcon(
+                        PhosphorIconsRegular.arrowRight,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ],
+                  ),
                 ),
+
                 const SizedBox(height: 28),
 
                 // Footer: Already have an account? Sign In

@@ -508,13 +508,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     width: 8,
                     height: 8,
                     decoration: const BoxDecoration(
-                      color: Color(0xFFF59E0B),
+                      color: Color(0xFFF87171),
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Discretionary: ${summary.discretionaryPercentage}%',
+                    'Over Spend: ${summary.discretionaryPercentage}%',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,

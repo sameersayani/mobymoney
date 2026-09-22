@@ -29,14 +29,15 @@ class AuthRepository {
         response.data as Map<String, dynamic>,
       );
 
-      // Persist the backend API access token & user profile in parallel (non-blocking)
-      unawaited(Future.wait([
+      // Persist the backend JWT access token & user profile in SecureStorage
+      await Future.wait([
         _storageService.saveAccessToken(authResponse.accessToken),
         _storageService.saveUserData(authResponse.user.toJson()),
-      ]));
+      ]);
 
       return authResponse;
     } on DioException catch (e) {
+
       throw NetworkException.fromDioException(e);
     } catch (e) {
       throw NetworkException(message: 'Failed to authenticate: ${e.toString()}');
@@ -44,6 +45,7 @@ class AuthRepository {
   }
 
   /// Fetch current authenticated user details from GET /api/mobile/auth/me
+
   Future<UserModel> getMe() async {
     try {
       final response = await _apiClient.dio.get(ApiEndpoints.authMe);

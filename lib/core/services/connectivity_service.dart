@@ -37,13 +37,20 @@ class ConnectivityNotifier extends Notifier<ConnectivityStatus> {
           .timeout(const Duration(seconds: 4));
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (_) {
-      // Fallback secondary check to Cloudflare DNS
+      // Fallback secondary check to Cloudflare
       try {
-        final result = await InternetAddress.lookup('1.1.1.1')
+        final result = await InternetAddress.lookup('cloudflare.com')
             .timeout(const Duration(seconds: 3));
         return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
       } catch (_) {
-        return false;
+        // Final fallback to Apple servers (good for iOS users)
+        try {
+          final result = await InternetAddress.lookup('apple.com')
+              .timeout(const Duration(seconds: 3));
+          return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+        } catch (_) {
+          return false;
+        }
       }
     }
   }

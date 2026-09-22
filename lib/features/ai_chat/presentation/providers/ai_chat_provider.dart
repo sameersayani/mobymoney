@@ -94,9 +94,13 @@ class AiChatNotifier extends Notifier<AiChatState> {
         isTyping: false,
       );
     } catch (e) {
+      String cleanErr = e.toString()
+          .replaceFirst(RegExp(r'^Exception:\s*'), '')
+          .replaceFirst(RegExp(r'^NetworkException:\s*'), '');
+      
       final fallbackAiMessage = ChatMessage(
         id: 'err-${DateTime.now().millisecondsSinceEpoch}',
-        content: '⚠️ ${e.toString()}',
+        content: cleanErr,
         isUser: false,
         timestamp: DateTime.now(),
         status: MessageStatus.failed,
@@ -105,7 +109,7 @@ class AiChatNotifier extends Notifier<AiChatState> {
       state = state.copyWith(
         messages: [...state.messages, fallbackAiMessage],
         isTyping: false,
-        errorMessage: e.toString(),
+        errorMessage: cleanErr,
       );
     }
   }

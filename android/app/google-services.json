@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "14562504972",
+    "project_id": "expensemanager-482420",
+    "storage_bucket": "expensemanager-482420.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:14562504972:android:e778b4737c1256f8415929",
+        "android_client_info": {
+          "package_name": "com.mobymoney.mobymoney"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "14562504972-dfts640bodlm3ss1d4g010acn737bejb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mobymoney.mobymoney",
+            "certificate_hash": "25c561a360c7a1343a83bab972faba88eb9188bd"
+          }
+        },
+        {
+          "client_id": "14562504972-dg8h7p03cj0dkimkhpuenhvstrcctks4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEy4ZKLMX1qBpSnJuwFcYQQ6KP_s5OC1M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "14562504972-dg8h7p03cj0dkimkhpuenhvstrcctks4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

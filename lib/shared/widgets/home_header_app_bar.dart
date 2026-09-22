@@ -79,20 +79,24 @@ class HomeHeaderAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    _displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
-                      color: AppColors.neutralDark,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _displayName,
+                      maxLines: 1,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                        color: AppColors.neutralDark,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+
 
             // Right: User Circle Avatar
             GestureDetector(

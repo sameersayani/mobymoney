@@ -39,6 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+
   void _handleGoogleSignIn() async {
     final authState = ref.read(authStateProvider);
     if (authState.isLoading) return; // Guard duplicate taps
@@ -58,6 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     }
   }
+
 
   void _showSuccessFeedback(String message) {
     AppSnackBar.showSuccess(context, message);

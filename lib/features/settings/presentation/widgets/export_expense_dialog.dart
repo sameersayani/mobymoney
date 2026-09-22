@@ -54,7 +54,9 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
 
       if (mounted && file != null) {
         setState(() => _downloadedFile = file);
-        _showDownloadNotification(file);
+        // Immediately trigger the system share/save sheet.
+        // On Android 10+, this is the ONLY reliable way to save to public Downloads.
+        await _saveToDownloads(file);
       }
     } catch (e) {
       if (mounted) {
@@ -62,6 +64,43 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
           context,
           'Failed to download report: ${e.toString().replaceAll('Exception: ', '')}',
         );
+      }
+    }
+  }
+
+  /// Uses the system share sheet to save the file to the user's Downloads folder.
+  /// This is the Android 10+ scoped storage-compatible approach.
+  Future<void> _saveToDownloads(File file) async {
+    try {
+      final fileName = file.path.split(Platform.pathSeparator).last;
+      final isXlsx = fileName.endsWith('.xlsx');
+
+      final result = await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile(
+              file.path,
+              mimeType: isXlsx
+                  ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                  : 'text/csv',
+              name: fileName,
+            ),
+          ],
+          subject: 'MobyMoney Expense Report',
+          sharePositionOrigin: Rect.zero,
+        ),
+      );
+
+      if (mounted) {
+        if (result.status == ShareResultStatus.success ||
+            result.status == ShareResultStatus.dismissed) {
+          _showDownloadNotification(file);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        // Fallback: show snackbar with Open / Share options
+        _showDownloadNotification(file);
       }
     }
   }

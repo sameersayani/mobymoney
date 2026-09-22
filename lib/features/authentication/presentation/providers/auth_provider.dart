@@ -130,3 +130,5 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
     }
   }
 }
+
+

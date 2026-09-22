@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'core/logging/app_logger.dart';
 import 'core/routing/app_router.dart';
 import 'core/services/connectivity_service.dart';
@@ -11,6 +12,11 @@ import 'features/common/presentation/offline_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Disable runtime font fetching — fonts are bundled in the package.
+  // This prevents network calls on first launch and works fully offline.
+  GoogleFonts.config.allowRuntimeFetching = false;
+
 
   // Global Flutter error catching (prevents silent crashes)
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -50,7 +56,13 @@ void main() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
+      // Android: dark icons on light background
       statusBarIconBrightness: Brightness.dark,
+      // iOS: Brightness.light = dark icons (counterintuitive naming)
+      statusBarBrightness: Brightness.light,
+      // Navigation bar (Android only)
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
 

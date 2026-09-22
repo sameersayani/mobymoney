@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>mobymoney</string>
+	<string>MobyMoney</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -37,15 +37,26 @@
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
+	<!-- Performance: Enable ProMotion/120Hz on ProMotion displays -->
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Support indirect input (keyboard, trackpad) for iPad/Mac Catalyst -->
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Disable file sharing in Files app -->
 	<key>UIFileSharingEnabled</key>
 	<false/>
+	<!-- Disable opening documents in place -->
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<false/>
+	<!-- App Store: Declare no export-controlled encryption usage -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- Privacy: Required for share_plus to access photo library on iOS 14+ -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>MobyMoney uses your photo library to save exported expense reports.</string>
+	<!-- Privacy: Required if share_plus targets files on iOS -->
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>MobyMoney needs access to Documents to save expense reports.</string>
 </dict>
 </plist>

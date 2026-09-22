@@ -176,7 +176,7 @@ class _ExpenseFilterBottomSheetState
                       children: [
                         _buildTagChip(ExpenseTagFilter.all, 'All'),
                         _buildTagChip(ExpenseTagFilter.needed, 'Needed (Essential)'),
-                        _buildTagChip(ExpenseTagFilter.notNeeded, 'Not Needed (Discretionary)'),
+                        _buildTagChip(ExpenseTagFilter.notNeeded, 'Not Needed (Over Spend)'),
                       ],
                     ),
 

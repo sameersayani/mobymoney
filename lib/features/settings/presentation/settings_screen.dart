@@ -234,22 +234,22 @@ class SettingsScreen extends ConsumerWidget {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryContainer,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'PRO',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.primaryDark,
-                                    ),
-                                  ),
-                                ),
+                                // const SizedBox(width: 6),
+                                // Container(
+                                //   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                //   decoration: BoxDecoration(
+                                //     color: AppColors.primaryContainer,
+                                //     borderRadius: BorderRadius.circular(6),
+                                //   ),
+                                //   child: Text(
+                                //     'PRO',
+                                //     style: GoogleFonts.inter(
+                                //       fontSize: 10,
+                                //       fontWeight: FontWeight.w800,
+                                //       color: AppColors.primaryDark,
+                                //     ),
+                                //   ),
+                                // ),
                               ],
                             ),
                             const SizedBox(height: 3),
@@ -265,28 +265,28 @@ class SettingsScreen extends ConsumerWidget {
                                 color: AppColors.slate500,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF10B981),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Sync Active (Google Cloud)',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF10B981),
-                                  ),
-                                ),
-                              ],
-                            ),
+                            // const SizedBox(height: 8),
+                            // Row(
+                            //   children: [
+                            //     Container(
+                            //       width: 6,
+                            //       height: 6,
+                            //       decoration: const BoxDecoration(
+                            //         color: Color(0xFF10B981),
+                            //         shape: BoxShape.circle,
+                            //       ),
+                            //     ),
+                            //     const SizedBox(width: 6),
+                            //     Text(
+                            //       'Sync Active (Google Cloud)',
+                            //       style: GoogleFonts.inter(
+                            //         fontSize: 11,
+                            //         fontWeight: FontWeight.w600,
+                            //         color: const Color(0xFF10B981),
+                            //       ),
+                            //     ),
+                            //   ],
+                            // ),
                           ],
                         ),
                       ),

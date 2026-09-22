@@ -14,34 +14,29 @@ class ReportRepository {
 
   final ApiClient _apiClient;
 
-  /// Safely writes bytes to an accessible local directory without OS permission errors.
+  /// Saves bytes to the app's cache directory.
+  /// This is guaranteed to work on all Android versions (no scoped-storage issues).
+  /// The UI layer (share_plus) then handles saving to public Downloads.
   Future<File> _saveBytesSafely(List<int> bytes, String fileName) async {
-    final candidateDirs = <Future<Directory?> Function()>[
-      () async {
-        if (Platform.isAndroid) {
-          try {
-            return await getExternalStorageDirectory();
-          } catch (_) {}
-        }
-        return null;
-      },
-      () async => await getApplicationDocumentsDirectory(),
-      () async => await getTemporaryDirectory(),
+    // Try multiple writable locations in priority order
+    final candidates = <Future<Directory> Function()>[
+      () => getTemporaryDirectory(),
+      () => getApplicationCacheDirectory(),
+      () => getApplicationDocumentsDirectory(),
     ];
 
-    for (final dirGetter in candidateDirs) {
+    for (final getDir in candidates) {
       try {
-        final dir = await dirGetter();
-        if (dir != null) {
-          if (!await dir.exists()) {
-            await dir.create(recursive: true);
-          }
-          final file = File('${dir.path}/$fileName');
-          await file.writeAsBytes(bytes, flush: true);
-          return file;
+        final dir = await getDir();
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
         }
+        final file = File('${dir.path}/$fileName');
+        await file.writeAsBytes(bytes, flush: true);
+        debugPrint('[ReportRepo] Saved to: ${file.path}');
+        return file;
       } catch (e) {
-        debugPrint('Failed writing file to directory candidate: $e');
+        debugPrint('[ReportRepo] Candidate dir failed: $e');
       }
     }
 
@@ -50,34 +45,26 @@ class ReportRepository {
     );
   }
 
-  /// Safely writes text/CSV content to an accessible local directory without permission errors.
+  /// Saves string/CSV to app cache dir.
   Future<File> _saveStringSafely(String content, String fileName) async {
-    final candidateDirs = <Future<Directory?> Function()>[
-      () async {
-        if (Platform.isAndroid) {
-          try {
-            return await getExternalStorageDirectory();
-          } catch (_) {}
-        }
-        return null;
-      },
-      () async => await getApplicationDocumentsDirectory(),
-      () async => await getTemporaryDirectory(),
+    final candidates = <Future<Directory> Function()>[
+      () => getTemporaryDirectory(),
+      () => getApplicationCacheDirectory(),
+      () => getApplicationDocumentsDirectory(),
     ];
 
-    for (final dirGetter in candidateDirs) {
+    for (final getDir in candidates) {
       try {
-        final dir = await dirGetter();
-        if (dir != null) {
-          if (!await dir.exists()) {
-            await dir.create(recursive: true);
-          }
-          final file = File('${dir.path}/$fileName');
-          await file.writeAsString(content, flush: true);
-          return file;
+        final dir = await getDir();
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
         }
+        final file = File('${dir.path}/$fileName');
+        await file.writeAsString(content, flush: true);
+        debugPrint('[ReportRepo] Saved CSV to: ${file.path}');
+        return file;
       } catch (e) {
-        debugPrint('Failed writing CSV to directory candidate: $e');
+        debugPrint('[ReportRepo] Candidate dir failed: $e');
       }
     }
 

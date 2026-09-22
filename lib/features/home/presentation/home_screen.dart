@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/routing/app_router.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
+import 'package:mobymoney/core/widgets/app_error_widget.dart';
 import 'package:mobymoney/core/widgets/compact_month_year_picker_dialog.dart';
 import 'package:mobymoney/core/widgets/shimmer_loading.dart';
 import 'package:mobymoney/features/ai_chat/presentation/ai_chat_screen.dart';
@@ -142,34 +143,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) {
     return dashboardAsync.when(
       loading: () => const HomeScreenShimmer(),
-      error: (err, stack) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const PhosphorIcon(
-                PhosphorIconsRegular.warningCircle,
-                color: AppColors.error,
-                size: 40,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                err.toString(),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(color: AppColors.error),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => ref.read(dashboardSummaryProvider.notifier).refresh(),
-                icon: const PhosphorIcon(PhosphorIconsRegular.arrowClockwise, size: 16),
-                label: const Text('Retry'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
+      error: (err, stack) => RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async {
+          ref.read(homeSelectedDateProvider.notifier).updateDate(DateTime.now());
+          await ref.read(dashboardSummaryProvider.notifier).loadDashboardData(date: DateTime.now());
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          child: Container(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: AppErrorWidget(
+              error: err,
+              onRetry: () =>
+                  ref.read(dashboardSummaryProvider.notifier).refresh(),
+            ),
           ),
         ),
       ),
@@ -224,20 +216,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ],
                             ),
                             const SizedBox(height: 2),
-                            Text(
-                              displayName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.4,
-                                color: AppColors.neutralDark,
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                displayName,
+                                maxLines: 1,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.4,
+                                  color: AppColors.neutralDark,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
+
 
                       // Interactive Premium Calendar Button
                       GestureDetector(
@@ -711,7 +707,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         const SizedBox(width: 6),
                                         Flexible(
                                           child: Text(
-                                            'Discretionary',
+                                            'Over Spend',
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: GoogleFonts.inter(

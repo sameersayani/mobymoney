@@ -98,6 +98,7 @@ class AiChatBubble extends ConsumerWidget {
 
   Widget _buildAiBubble(BuildContext context, WidgetRef ref) {
     final timeStr = DateFormat('hh:mm a').format(message.timestamp);
+    final isFailed = message.status == MessageStatus.failed;
 
     return Padding(
       padding: const EdgeInsets.only(left: 16, right: 28, top: 8, bottom: 12),
@@ -112,23 +113,28 @@ class AiChatBubble extends ConsumerWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, Color(0xFF14B8A6)],
+                  gradient: LinearGradient(
+                    colors: isFailed
+                        ? [const Color(0xFFF57C00), const Color(0xFFEF4444)]
+                        : [AppColors.primary, const Color(0xFF14B8A6)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.2),
+                      color: (isFailed ? AppColors.error : AppColors.primary)
+                          .withValues(alpha: 0.2),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                child: const Center(
+                child: Center(
                   child: PhosphorIcon(
-                    PhosphorIconsFill.sparkle,
+                    isFailed
+                        ? PhosphorIconsRegular.warning
+                        : PhosphorIconsFill.sparkle,
                     color: Colors.white,
                     size: 16,
                   ),
@@ -141,7 +147,7 @@ class AiChatBubble extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isFailed ? const Color(0xFFFEF2F2) : Colors.white,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(4),
                       topRight: Radius.circular(18),
@@ -149,7 +155,7 @@ class AiChatBubble extends ConsumerWidget {
                       bottomRight: Radius.circular(18),
                     ),
                     border: Border.all(
-                      color: AppColors.slate200,
+                      color: isFailed ? const Color(0xFFFECACA) : AppColors.slate200,
                       width: 1,
                     ),
                     boxShadow: [
@@ -163,6 +169,27 @@ class AiChatBubble extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (isFailed) ...[
+                        Row(
+                          children: [
+                            const PhosphorIcon(
+                              PhosphorIconsRegular.warningCircle,
+                              color: AppColors.error,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Connection Issue',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                      ],
                       // Formatted Text Content
                       _buildFormattedContent(message.content),
 

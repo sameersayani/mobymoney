@@ -85,7 +85,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.expenseDetail,
         name: 'expenseDetail',
         builder: (context, state) {
-          final expense = state.extra as RecentExpenseItemModel;
+          final expense = state.extra as RecentExpenseItemModel?;
+          if (expense == null) {
+            // Safe fallback: navigate back if extra is missing
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => context.go(AppRoutes.home),
+            );
+            return const SizedBox.shrink();
+          }
           return ExpenseDetailScreen(expense: expense);
         },
       ),
@@ -110,6 +117,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ExpenseTypesScreen(),
       ),
     ],
+    errorBuilder: (context, state) => Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.broken_image_outlined, size: 64, color: Color(0xFF94A3B8)),
+              const SizedBox(height: 16),
+              Text(
+                'Page Not Found',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Route: ${state.uri.toString()}',
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => context.go(AppRoutes.home),
+                child: const Text('Go Home'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
   );
 });
 

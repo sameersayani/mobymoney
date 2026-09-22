@@ -468,7 +468,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                   flex: summary.discretionaryPercentage,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF59E0B),
+                      color: AppColors.discretionary,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),

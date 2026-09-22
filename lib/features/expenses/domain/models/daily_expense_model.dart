@@ -34,22 +34,32 @@ class DailyExpenseItemModel {
     final rawUnitPrice = json['unit_price'] ?? json['price'] ?? 0;
     final int unitPriceMinor = _parseAmountToMinor(rawUnitPrice);
 
-    final rawDate = json['date'] ?? json['created_at'] ?? json['time'] ?? '';
+    final rawDate = json['date'] ??
+        json['created_at'] ??
+        json['createdAt'] ??
+        json['time'] ??
+        json['timestamp'] ??
+        '';
     DateTime parsedDate;
     try {
-      parsedDate = DateTime.tryParse(rawDate.toString()) ?? DateTime.now();
+      final str = rawDate.toString().trim();
+      if (str.isNotEmpty) {
+        parsedDate = DateTime.tryParse(str) ?? DateTime.now();
+      } else {
+        parsedDate = DateTime.now();
+      }
     } catch (_) {
       parsedDate = DateTime.now();
     }
 
-    final dynamic rawEssential = json['is_essential'] ??
-        json['really_needed'] ??
+    final dynamic rawEssential = json['really_needed'] ??
+        json['reallyNeeded'] ??
+        json['is_essential'] ??
+        json['isEssential'] ??
         json['tag'] ??
         json['essential'] ??
         json['needed'] ??
-        json['is_needed'] ??
-        json['reallyNeeded'] ??
-        json['isEssential'];
+        json['is_needed'];
 
     final bool isEssential = rawEssential == true ||
         rawEssential == 1 ||
@@ -91,8 +101,13 @@ class DailyExpenseItemModel {
     final rawQty = json['quantity_purchased'] ?? json['quantity'] ?? 1;
     final quantity = rawQty is int ? rawQty : (int.tryParse(rawQty.toString()) ?? 1);
 
+    final rawId = json['id'] ??
+        json['_id'] ??
+        json['expense_id'] ??
+        json['dailyexpense_id'];
+
     return DailyExpenseItemModel(
-      id: (json['id'] ?? 'exp-${DateTime.now().millisecondsSinceEpoch}').toString(),
+      id: (rawId != null ? rawId.toString() : 'exp-${parsedDate.millisecondsSinceEpoch}'),
       title: json['name'] ?? json['title'] ?? json['expense_name'] ?? catName,
       categoryName: catName,
       date: parsedDate,
@@ -266,9 +281,13 @@ class DailyExpenseResponseModel {
         final cmp = b.rawDate!.compareTo(a.rawDate!);
         if (cmp != 0) return cmp;
       }
-      final idA = int.tryParse(a.id) ?? 0;
-      final idB = int.tryParse(b.id) ?? 0;
-      return idB.compareTo(idA);
+      final numA = num.tryParse(a.id);
+      final numB = num.tryParse(b.id);
+      if (numA != null && numB != null) {
+        final numCmp = numB.compareTo(numA);
+        if (numCmp != 0) return numCmp;
+      }
+      return b.id.compareTo(a.id);
     });
 
     // Group items into days for weekly spending trend

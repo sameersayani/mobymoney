@@ -154,12 +154,32 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
                 // Apply Sorting
                 switch (_filter.sortOrder) {
                   case ExpenseSortOrder.newest:
-                    filtered.sort((a, b) => (b.rawDate ?? DateTime(2000))
-                        .compareTo(a.rawDate ?? DateTime(2000)));
+                    filtered.sort((a, b) {
+                      final dateA = a.rawDate ?? DateTime(2000);
+                      final dateB = b.rawDate ?? DateTime(2000);
+                      final dateComp = dateB.compareTo(dateA);
+                      if (dateComp != 0) return dateComp;
+                      final numA = int.tryParse(a.id.replaceAll(RegExp(r'\D'), ''));
+                      final numB = int.tryParse(b.id.replaceAll(RegExp(r'\D'), ''));
+                      if (numA != null && numB != null && numA != numB) {
+                        return numB.compareTo(numA);
+                      }
+                      return b.id.compareTo(a.id);
+                    });
                     break;
                   case ExpenseSortOrder.oldest:
-                    filtered.sort((a, b) => (a.rawDate ?? DateTime(2000))
-                        .compareTo(b.rawDate ?? DateTime(2000)));
+                    filtered.sort((a, b) {
+                      final dateA = a.rawDate ?? DateTime(2000);
+                      final dateB = b.rawDate ?? DateTime(2000);
+                      final dateComp = dateA.compareTo(dateB);
+                      if (dateComp != 0) return dateComp;
+                      final numA = int.tryParse(a.id.replaceAll(RegExp(r'\D'), ''));
+                      final numB = int.tryParse(b.id.replaceAll(RegExp(r'\D'), ''));
+                      if (numA != null && numB != null && numA != numB) {
+                        return numA.compareTo(numB);
+                      }
+                      return a.id.compareTo(b.id);
+                    });
                     break;
                   case ExpenseSortOrder.highestAmount:
                     filtered.sort(

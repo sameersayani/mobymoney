@@ -52,20 +52,26 @@ class AiRepository {
   }
 
   /// POST /api/ai/confirm-classification
-  /// Request: { "operation": "create", "arguments": { ... }, "really_needed": true }
+  /// Request: { "operation": "create", "arguments": { ... }, "really_needed": true, "reason": "..." }
   Future<dynamic> confirmAiClassification({
     required String operation,
     required Map<String, dynamic> arguments,
     required bool reallyNeeded,
+    String? reason,
   }) async {
     try {
+      final payload = <String, dynamic>{
+        'operation': operation,
+        'arguments': arguments,
+        'really_needed': reallyNeeded,
+      };
+      if (reason != null && reason.isNotEmpty) {
+        payload['reason'] = reason;
+      }
+
       final response = await _apiClient.dio.post(
         ApiEndpoints.aiConfirmClassification,
-        data: {
-          'operation': operation,
-          'arguments': arguments,
-          'really_needed': reallyNeeded,
-        },
+        data: payload,
       );
       return response.data;
     } on DioException catch (e) {
@@ -84,6 +90,7 @@ class AiChatApiResponse {
   final String? operation;
   final Map<String, dynamic>? arguments;
   final bool? reallyNeeded;
+  final String? reason;
 
   const AiChatApiResponse({
     required this.content,
@@ -91,6 +98,7 @@ class AiChatApiResponse {
     this.operation,
     this.arguments,
     this.reallyNeeded,
+    this.reason,
   });
 
   factory AiChatApiResponse.parse(dynamic rawData) {
@@ -138,11 +146,27 @@ class AiChatApiResponse {
       textContent = fallbackContent ?? map.toString();
     }
 
-    final operation = map['operation']?.toString();
-    final arguments = map['arguments'] is Map<String, dynamic>
-        ? map['arguments'] as Map<String, dynamic>
-        : (map['args'] is Map<String, dynamic> ? map['args'] as Map<String, dynamic> : null);
-    final reallyNeeded = map['really_needed'] as bool? ?? map['reallyNeeded'] as bool?;
+    String? operation;
+    Map<String, dynamic>? arguments;
+    bool? reallyNeeded;
+    String? reason;
+
+    if (map['pending_classification'] is Map<String, dynamic>) {
+      final pc = map['pending_classification'] as Map<String, dynamic>;
+      operation = pc['operation']?.toString();
+      if (pc['arguments'] is Map<String, dynamic>) {
+        arguments = pc['arguments'] as Map<String, dynamic>;
+      }
+      reallyNeeded = pc['really_needed'] as bool? ?? pc['reallyNeeded'] as bool?;
+      reason = pc['reason']?.toString();
+    } else {
+      operation = map['operation']?.toString();
+      arguments = map['arguments'] is Map<String, dynamic>
+          ? map['arguments'] as Map<String, dynamic>
+          : (map['args'] is Map<String, dynamic> ? map['args'] as Map<String, dynamic> : null);
+      reallyNeeded = map['really_needed'] as bool? ?? map['reallyNeeded'] as bool?;
+      reason = map['reason']?.toString();
+    }
 
     return AiChatApiResponse(
       content: textContent,
@@ -150,6 +174,7 @@ class AiChatApiResponse {
       operation: operation,
       arguments: arguments,
       reallyNeeded: reallyNeeded,
+      reason: reason,
     );
   }
 }

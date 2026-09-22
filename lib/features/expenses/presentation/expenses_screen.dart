@@ -147,16 +147,34 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                 // Apply Sorting
                 switch (_filter.sortOrder) {
                   case ExpenseSortOrder.newest:
-                    if (filtered.isNotEmpty && filtered.first.rawDate != null) {
-                      filtered.sort((a, b) =>
-                          (b.rawDate ?? DateTime(2000)).compareTo(a.rawDate ?? DateTime(2000)));
-                    }
+                    filtered.sort((a, b) {
+                      final dateA = a.rawDate ?? DateTime(2000);
+                      final dateB = b.rawDate ?? DateTime(2000);
+                      final cmp = dateB.compareTo(dateA);
+                      if (cmp != 0) return cmp;
+                      final numA = num.tryParse(a.id);
+                      final numB = num.tryParse(b.id);
+                      if (numA != null && numB != null) {
+                        final numCmp = numB.compareTo(numA);
+                        if (numCmp != 0) return numCmp;
+                      }
+                      return b.id.compareTo(a.id);
+                    });
                     break;
                   case ExpenseSortOrder.oldest:
-                    if (filtered.isNotEmpty && filtered.first.rawDate != null) {
-                      filtered.sort((a, b) =>
-                          (a.rawDate ?? DateTime(2000)).compareTo(b.rawDate ?? DateTime(2000)));
-                    }
+                    filtered.sort((a, b) {
+                      final dateA = a.rawDate ?? DateTime(2000);
+                      final dateB = b.rawDate ?? DateTime(2000);
+                      final cmp = dateA.compareTo(dateB);
+                      if (cmp != 0) return cmp;
+                      final numA = num.tryParse(a.id);
+                      final numB = num.tryParse(b.id);
+                      if (numA != null && numB != null) {
+                        final numCmp = numA.compareTo(numB);
+                        if (numCmp != 0) return numCmp;
+                      }
+                      return a.id.compareTo(b.id);
+                    });
                     break;
                   case ExpenseSortOrder.highestAmount:
                     filtered.sort((a, b) => b.amountMinor.compareTo(a.amountMinor));

@@ -87,6 +87,7 @@ class AiChatNotifier extends Notifier<AiChatState> {
         operation: response.operation,
         arguments: response.arguments,
         reallyNeeded: response.reallyNeeded,
+        reason: response.reason,
       );
 
       state = state.copyWith(
@@ -115,19 +116,31 @@ class AiChatNotifier extends Notifier<AiChatState> {
   }
 
   /// Confirm and execute an AI-suggested classification or operation
-  Future<bool> confirmAiClassification(ChatMessage message) async {
+  Future<bool> confirmAiClassification(
+    ChatMessage message, {
+    bool? overrideReallyNeeded,
+  }) async {
     if (message.operation == null || message.arguments == null) return false;
 
     state = state.copyWith(isExecutingAction: true);
     try {
       final repo = ref.read(aiRepositoryProvider);
-      await repo.confirmAiClassification(
+      final finalReallyNeeded =
+          overrideReallyNeeded ?? message.reallyNeeded ?? false;
+
+      final res = await repo.confirmAiClassification(
         operation: message.operation!,
         arguments: message.arguments!,
-        reallyNeeded: message.reallyNeeded ?? true,
+        reallyNeeded: finalReallyNeeded,
+        reason: message.reason,
       );
 
-      // Mark message as confirmed
+      String confirmReply = 'Expense saved';
+      if (res is Map && res['message'] is String) {
+        confirmReply = res['message'];
+      }
+
+      // Mark original message as confirmed
       final updatedMessages = state.messages.map((m) {
         if (m.id == message.id) {
           return m.copyWith(isConfirmed: true);
@@ -135,11 +148,22 @@ class AiChatNotifier extends Notifier<AiChatState> {
         return m;
       }).toList();
 
-      // Refresh dashboard data
-      await ref.read(dashboardSummaryProvider.notifier).refresh();
+      // Add a success confirmation assistant message
+      final confirmAiMsg = ChatMessage(
+        id: 'ai-${DateTime.now().millisecondsSinceEpoch}',
+        content: confirmReply,
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+
+      // Refresh dashboard and expenses summary providers
+      try {
+        await ref.read(dashboardSummaryProvider.notifier).refresh();
+        ref.invalidate(expensesSummaryProvider);
+      } catch (_) {}
 
       state = state.copyWith(
-        messages: updatedMessages,
+        messages: [...updatedMessages, confirmAiMsg],
         isExecutingAction: false,
       );
       return true;
@@ -181,6 +205,17 @@ class AiChatNotifier extends Notifier<AiChatState> {
       );
       return false;
     }
+  }
+
+  /// Deny (dismiss) an AI-proposed action without executing it
+  void denyAction(ChatMessage message) {
+    final updatedMessages = state.messages.map((m) {
+      if (m.id == message.id) {
+        return m.copyWith(isConfirmed: true);
+      }
+      return m;
+    }).toList();
+    state = state.copyWith(messages: updatedMessages);
   }
 
   void clearChat() {

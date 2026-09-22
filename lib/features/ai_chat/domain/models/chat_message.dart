@@ -29,6 +29,7 @@ class ChatMessage {
   final String? operation;
   final Map<String, dynamic>? arguments;
   final bool? reallyNeeded;
+  final String? reason;
   final bool isConfirmed;
 
   const ChatMessage({
@@ -42,6 +43,7 @@ class ChatMessage {
     this.operation,
     this.arguments,
     this.reallyNeeded,
+    this.reason,
     this.isConfirmed = false,
   });
 
@@ -56,6 +58,7 @@ class ChatMessage {
     String? operation,
     Map<String, dynamic>? arguments,
     bool? reallyNeeded,
+    String? reason,
     bool? isConfirmed,
   }) {
     return ChatMessage(
@@ -69,6 +72,7 @@ class ChatMessage {
       operation: operation ?? this.operation,
       arguments: arguments ?? this.arguments,
       reallyNeeded: reallyNeeded ?? this.reallyNeeded,
+      reason: reason ?? this.reason,
       isConfirmed: isConfirmed ?? this.isConfirmed,
     );
   }

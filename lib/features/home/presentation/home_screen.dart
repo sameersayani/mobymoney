@@ -1,4 +1,7 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +10,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/routing/app_router.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/core/widgets/app_error_widget.dart';
+import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/core/widgets/compact_month_year_picker_dialog.dart';
 import 'package:mobymoney/core/widgets/shimmer_loading.dart';
 import 'package:mobymoney/features/ai_chat/presentation/ai_chat_screen.dart';
@@ -33,6 +37,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentNavIndex = 0;
+  DateTime? _lastBackPressTime;
+
+  bool get _isAndroid => !kIsWeb && Platform.isAndroid;
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -72,45 +79,79 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final selectedDate = ref.watch(selectedDateProvider);
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: const ProfileDrawer(),
-      backgroundColor: AppColors.background,
-      appBar: _currentNavIndex == 0
-          ? DashboardHeaderAppBar(
-              user: user,
-              onMenuTap: () {
-                _scaffoldKey.currentState?.openDrawer();
-              },
-              onAvatarTap: () {
-                _scaffoldKey.currentState?.openDrawer();
-              },
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: (_currentNavIndex <= 2 && !isKeyboardOpen)
-          ? FloatingActionButton.extended(
-              onPressed: () => AddExpenseBottomSheet.show(context),
-              backgroundColor: AppColors.primary,
-              elevation: 4,
-              icon: const PhosphorIcon(
-                PhosphorIconsRegular.plusCircle,
-                color: Colors.white,
-                size: 20,
-              ),
-              label: Text(
-                'Add Expense',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+    return PopScope(
+      canPop: !_isAndroid,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        // If drawer is open, close it first
+        if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+          Navigator.of(context).pop();
+          return;
+        }
+
+        // If on a sub-tab (Expenses, Analytics, AI Hub), return to Home tab first
+        if (_currentNavIndex != 0) {
+          setState(() => _currentNavIndex = 0);
+          return;
+        }
+
+        // Android Root Home Screen double-back logic
+        final now = DateTime.now();
+        if (_lastBackPressTime == null ||
+            now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          AppSnackBar.show(
+            context,
+            message: 'Press back again to exit',
+            type: SnackBarType.info,
+            duration: const Duration(seconds: 2),
+          );
+        } else {
+          // Exit the application cleanly
+          await SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        drawer: const ProfileDrawer(),
+        backgroundColor: AppColors.background,
+        appBar: _currentNavIndex == 0
+            ? DashboardHeaderAppBar(
+                user: user,
+                onMenuTap: () {
+                  _scaffoldKey.currentState?.openDrawer();
+                },
+                onAvatarTap: () {
+                  _scaffoldKey.currentState?.openDrawer();
+                },
+              )
+            : null,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        floatingActionButton: (_currentNavIndex <= 2 && !isKeyboardOpen)
+            ? FloatingActionButton.extended(
+                onPressed: () => AddExpenseBottomSheet.show(context),
+                backgroundColor: AppColors.primary,
+                elevation: 4,
+                icon: const PhosphorIcon(
+                  PhosphorIconsRegular.plusCircle,
                   color: Colors.white,
-                  letterSpacing: 0.2,
+                  size: 20,
                 ),
-              ),
-            )
-          : null,
-      body: _buildCurrentTabBody(dashboardAsync, user, selectedDate),
-      bottomNavigationBar: _buildBottomNav(),
+                label: Text(
+                  'Add Expense',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              )
+            : null,
+        body: _buildCurrentTabBody(dashboardAsync, user, selectedDate),
+        bottomNavigationBar: _buildBottomNav(),
+      ),
     );
   }
 

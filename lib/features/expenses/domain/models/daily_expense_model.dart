@@ -42,10 +42,22 @@ class DailyExpenseItemModel {
       parsedDate = DateTime.now();
     }
 
-    final isEssential = json['is_essential'] == true ||
-        json['really_needed'] == true ||
-        json['tag'] == 'needed' ||
-        json['essential'] == true;
+    final dynamic rawEssential = json['is_essential'] ??
+        json['really_needed'] ??
+        json['tag'] ??
+        json['essential'] ??
+        json['needed'] ??
+        json['is_needed'] ??
+        json['reallyNeeded'] ??
+        json['isEssential'];
+
+    final bool isEssential = rawEssential == true ||
+        rawEssential == 1 ||
+        rawEssential == '1' ||
+        rawEssential == 'true' ||
+        rawEssential == 'needed' ||
+        rawEssential == 'essential' ||
+        rawEssential == 'yes';
 
     // Handle when expense_type is a Map { "id": 17, "name": "Internet" } or String
     String catName = 'General';
@@ -144,18 +156,58 @@ class DailyExpenseResponseModel {
   });
 
   factory DailyExpenseResponseModel.fromJson(Map<String, dynamic> json) {
-    final totalMinor = _parseAmountToMinor(json['actual_total_expenditure']);
-    final essentialMinor = _parseAmountToMinor(json['essential_expenditure']);
-    final nonEssentialMinor =
-        _parseAmountToMinor(json['non_essential_expenditure']);
+    int totalMinor = _parseAmountToMinor(
+      json['actual_total_expenditure'] ??
+          json['total_expenditure'] ??
+          json['total_spending'] ??
+          json['total_amount'] ??
+          json['totalAmount'],
+    );
+    int essentialMinor = _parseAmountToMinor(
+      json['essential_expenditure'] ??
+          json['essential_spending'] ??
+          json['essential_amount'] ??
+          json['essentialAmount'],
+    );
+    int nonEssentialMinor = _parseAmountToMinor(
+      json['non_essential_expenditure'] ??
+          json['non_essential_spending'] ??
+          json['discretionary_amount'] ??
+          json['discretionaryAmount'],
+    );
 
-    final rawData = json['data'];
+    final rawData = json['data'] ?? json['expenses'] ?? json['items'];
     List<DailyExpenseItemModel> itemsList = [];
     if (rawData is List) {
       itemsList = rawData
           .whereType<Map<String, dynamic>>()
           .map(DailyExpenseItemModel.fromJson)
           .toList();
+    }
+
+    // Compute robust fallback sums if server returns 0 or missing in root aggregation
+    if (itemsList.isNotEmpty) {
+      final computedSum = itemsList.fold<int>(0, (sum, it) => sum + it.amountMinor);
+      if (totalMinor <= 0 && computedSum > 0) {
+        totalMinor = computedSum;
+      }
+
+      final computedEssential = itemsList
+          .where((it) => it.tag == ExpenseTag.needed)
+          .fold<int>(0, (sum, it) => sum + it.amountMinor);
+
+      final computedNonEssential = itemsList
+          .where((it) => it.tag == ExpenseTag.notNeeded)
+          .fold<int>(0, (sum, it) => sum + it.amountMinor);
+
+      if (essentialMinor <= 0 && nonEssentialMinor <= 0) {
+        essentialMinor = computedEssential;
+        nonEssentialMinor = computedNonEssential;
+      } else if (essentialMinor <= 0 && computedEssential > 0) {
+        essentialMinor = computedEssential;
+      } else if (nonEssentialMinor <= 0 && computedNonEssential > 0) {
+        nonEssentialMinor = computedNonEssential;
+      }
     }
 
     return DailyExpenseResponseModel(

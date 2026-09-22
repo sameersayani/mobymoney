@@ -11,6 +11,7 @@ import 'package:mobymoney/core/widgets/compact_month_year_picker_dialog.dart';
 import 'package:mobymoney/core/widgets/shimmer_loading.dart';
 import 'package:mobymoney/features/ai_chat/presentation/ai_chat_screen.dart';
 import 'package:mobymoney/features/analytics/presentation/analytics_screen.dart';
+import 'package:mobymoney/features/analytics/presentation/providers/analytics_provider.dart';
 import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
 import 'package:mobymoney/features/dashboard/presentation/providers/dashboard_provider.dart';
@@ -926,6 +927,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: GestureDetector(
         onTap: () {
           setState(() => _currentNavIndex = index);
+          if (index == 2) {
+            final date = ref.read(analyticsSelectedDateProvider);
+            ref.read(analyticsSummaryProvider.notifier).loadAnalyticsData(date: date);
+            ref.read(chartDataProvider.notifier).refresh(date: date);
+          }
         },
         behavior: HitTestBehavior.opaque,
         child: Center(

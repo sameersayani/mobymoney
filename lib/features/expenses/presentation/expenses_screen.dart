@@ -446,35 +446,57 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           const SizedBox(height: 14),
 
           // Split Progress Bar
-          Container(
-            height: 8,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: summary.essentialPercentage,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.tertiary,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+          Builder(
+            builder: (context) {
+              final essentialPct = summary.essentialPercentage;
+              final discPct = summary.discretionaryPercentage;
+              final hasData = summary.totalSpendingMinor > 0 && (essentialPct > 0 || discPct > 0);
+
+              if (!hasData) {
+                return Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(4),
                   ),
+                );
+              }
+
+              final int flexEssential = essentialPct > 0 ? essentialPct : 0;
+              final int flexDisc = discPct > 0 ? discPct : 0;
+
+              return Container(
+                height: 8,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                const SizedBox(width: 2),
-                Expanded(
-                  flex: summary.discretionaryPercentage,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.discretionary,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
+                child: Row(
+                  children: [
+                    if (flexEssential > 0)
+                      Expanded(
+                        flex: flexEssential,
+                        child: Container(
+                          color: AppColors.tertiary,
+                        ),
+                      ),
+                    if (flexEssential > 0 && flexDisc > 0)
+                      Container(
+                        width: 2,
+                        color: Colors.transparent,
+                      ),
+                    if (flexDisc > 0)
+                      Expanded(
+                        flex: flexDisc,
+                        child: Container(
+                          color: const Color(0xFFF87171),
+                        ),
+                      ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
           const SizedBox(height: 8),
 

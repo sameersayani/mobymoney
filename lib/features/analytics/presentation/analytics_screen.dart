@@ -32,6 +32,19 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   ChartType _selectedChartType = ChartType.pie;
 
+  @override
+  void initState() {
+    super.initState();
+    // Always refresh analytics data cleanly in background upon entering Analytics tab
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final currentDate = ref.read(analyticsSelectedDateProvider);
+        ref.read(analyticsSummaryProvider.notifier).loadAnalyticsData(date: currentDate);
+        ref.read(chartDataProvider.notifier).refresh(date: currentDate);
+      }
+    });
+  }
+
   void _previousMonth() {
     ref.read(analyticsSelectedDateProvider.notifier).previousMonth();
   }

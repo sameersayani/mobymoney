@@ -1,0 +1,239 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" width="1600" height="1100">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="uiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F766E"/>
+      <stop offset="100%" stop-color="#115E59"/>
+    </linearGradient>
+    <linearGradient id="stateGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3A8A"/>
+      <stop offset="100%" stop-color="#1E40AF"/>
+    </linearGradient>
+    <linearGradient id="netGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4C1D95"/>
+      <stop offset="100%" stop-color="#5B21B6"/>
+    </linearGradient>
+    <linearGradient id="storageGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#831843"/>
+      <stop offset="100%" stop-color="#9D174D"/>
+    </linearGradient>
+    <linearGradient id="extGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C2D12"/>
+      <stop offset="100%" stop-color="#9A3412"/>
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#38BDF8"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#34D399"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="1100" fill="url(#bgGrad)"/>
+  
+  <!-- Grid Lines -->
+  <g stroke="#334155" stroke-width="0.5" stroke-opacity="0.3">
+    <line x1="0" y1="100" x2="1600" y2="100"/>
+    <line x1="0" y1="350" x2="1600" y2="350"/>
+    <line x1="0" y1="600" x2="1600" y2="600"/>
+    <line x1="0" y1="850" x2="1600" y2="850"/>
+  </g>
+
+  <!-- Title & Header -->
+  <text x="800" y="55" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#F8FAFC" text-anchor="middle" letter-spacing="1">MOBYMONEY — HIGH-LEVEL SYSTEM ARCHITECTURE</text>
+  <text x="800" y="85" font-family="Arial, sans-serif" font-size="14" fill="#94A3B8" text-anchor="middle">End-to-End Reactive Data Flow: User ➔ Presentation (Flutter) ➔ State (Riverpod) ➔ Data/Repository ➔ Network (Dio) ➔ Backend &amp; Cloud</text>
+
+  <!-- LAYER 1: CLIENT PRESENTATION / UI LAYER -->
+  <g filter="url(#dropShadow)">
+    <rect x="50" y="120" width="1500" height="200" rx="16" fill="#1E293B" stroke="#0F766E" stroke-width="2"/>
+    <rect x="50" y="120" width="1500" height="36" rx="16" fill="url(#uiGrad)"/>
+    <text x="75" y="144" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#FFFFFF">1. PRESENTATION LAYER (Flutter Widgets &amp; Declarative Routing)</text>
+    <text x="1520" y="144" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#CCFBF1" text-anchor="end">GoRouter Navigation Guard</text>
+
+    <!-- Component Cards -->
+    <!-- Card 1: Auth & Splash -->
+    <rect x="75" y="175" width="250" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="90" y="200" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#38BDF8">Authentication &amp; Splash</text>
+    <text x="90" y="222" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• SplashScreen (Auto-Routing)</text>
+    <text x="90" y="242" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• LoginScreen (Google Sign-In)</text>
+    <text x="90" y="262" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• RegisterScreen (Google Sign-In Only)</text>
+    <text x="90" y="282" font-family="Arial, sans-serif" font-size="11" fill="#34D399">Instant Reactive AuthGuard</text>
+
+    <!-- Card 2: Home & Dashboard -->
+    <rect x="345" y="175" width="270" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="360" y="200" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#38BDF8">Dashboard &amp; Overview</text>
+    <text x="360" y="222" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• HomeScreen (Date Switcher)</text>
+    <text x="360" y="242" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• Total Spending Hero Card</text>
+    <text x="360" y="262" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• Essential vs Discretionary</text>
+    <text x="360" y="282" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• SpendingTrendsWidget</text>
+
+    <!-- Card 3: Expenses Management -->
+    <rect x="635" y="175" width="280" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="650" y="200" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#38BDF8">Expense Tracking &amp; CRUD</text>
+    <text x="650" y="222" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• ExpensesScreen (Monthly Log)</text>
+    <text x="650" y="242" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• AddExpenseDialog (Create/Edit)</text>
+    <text x="650" y="262" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• ExpenseDetailScreen (Single)</text>
+    <text x="650" y="282" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• AllExpensesScreen (Search)</text>
+
+    <!-- Card 4: Analytics & Visuals -->
+    <rect x="935" y="175" width="270" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="950" y="200" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#38BDF8">Analytics &amp; Visualization</text>
+    <text x="950" y="222" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• AnalyticsScreen (Multi-Chart)</text>
+    <text x="950" y="242" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• PieChartWidget (Donut Split)</text>
+    <text x="950" y="262" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• BarChartWidget (Daily Peaks)</text>
+    <text x="950" y="282" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• LineChartWidget (Trend Angle)</text>
+
+    <!-- Card 5: AI & Settings -->
+    <rect x="1225" y="175" width="300" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="1240" y="200" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#38BDF8">AI Assistant &amp; Settings</text>
+    <text x="1240" y="222" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• AiChatScreen (Actionable Chat)</text>
+    <text x="1240" y="242" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• ProfileDrawer &amp; CurrencyModal</text>
+    <text x="1240" y="262" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• ExportExpenseDialog (Excel XLSX)</text>
+    <text x="1240" y="282" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• OfflineScreen (Full-Screen Overlay)</text>
+  </g>
+
+  <!-- Connectors Layer 1 -> Layer 2 -->
+  <line x1="200" y1="320" x2="200" y2="370" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="480" y1="320" x2="480" y2="370" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="775" y1="320" x2="775" y2="370" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="1070" y1="320" x2="1070" y2="370" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="1375" y1="320" x2="1375" y2="370" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- LAYER 2: STATE MANAGEMENT / BUSINESS LOGIC (Riverpod) -->
+  <g filter="url(#dropShadow)">
+    <rect x="50" y="370" width="1500" height="200" rx="16" fill="#1E293B" stroke="#1E40AF" stroke-width="2"/>
+    <rect x="50" y="370" width="1500" height="36" rx="16" fill="url(#stateGrad)"/>
+    <text x="75" y="394" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#FFFFFF">2. STATE MANAGEMENT &amp; REACTIVE BUSINESS LOGIC (Flutter Riverpod)</text>
+    <text x="1520" y="394" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#93C5FD" text-anchor="end">AsyncValue&lt;T&gt; Paradigm</text>
+
+    <!-- State Card 1 -->
+    <rect x="75" y="425" width="250" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="90" y="450" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#60A5FA">AuthNotifier (Riverpod)</text>
+    <text x="90" y="472" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• authStateProvider (UserModel)</text>
+    <text x="90" y="492" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• googleSignInProvider</text>
+    <text x="90" y="512" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• notifySessionExpired() [401]</text>
+    <text x="90" y="532" font-family="Arial, sans-serif" font-size="11" fill="#34D399">Instant Non-blocking Pipeline</text>
+
+    <!-- State Card 2 -->
+    <rect x="345" y="425" width="270" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="360" y="450" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#60A5FA">DashboardNotifier</text>
+    <text x="360" y="472" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• dashboardSummaryProvider</text>
+    <text x="360" y="492" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• homeSelectedDateProvider</text>
+    <text x="360" y="512" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• Auto-refresh on CRUD actions</text>
+    <text x="360" y="532" font-family="Arial, sans-serif" font-size="11" fill="#38BDF8">Listens to currencyProvider</text>
+
+    <!-- State Card 3 -->
+    <rect x="635" y="425" width="280" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="650" y="450" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#60A5FA">Expenses &amp; Types Notifiers</text>
+    <text x="650" y="472" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• expensesSummaryProvider</text>
+    <text x="650" y="492" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• expenseTypesProvider (Async)</text>
+    <text x="650" y="512" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• addExpense() / update / delete</text>
+    <text x="650" y="532" font-family="Arial, sans-serif" font-size="11" fill="#FBBF24">Optimistic Invalidation</text>
+
+    <!-- State Card 4 -->
+    <rect x="935" y="425" width="270" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="950" y="450" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#60A5FA">Analytics &amp; Chart Notifiers</text>
+    <text x="950" y="472" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• analyticsSummaryProvider</text>
+    <text x="950" y="492" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• chartDataProvider (Aggregations)</text>
+    <text x="950" y="512" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• analyticsSelectedDateProvider</text>
+    <text x="950" y="532" font-family="Arial, sans-serif" font-size="11" fill="#38BDF8">Real-time Recalculation</text>
+
+    <!-- State Card 5 -->
+    <rect x="1225" y="425" width="300" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="1240" y="450" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#60A5FA">AI Chat &amp; App Services</text>
+    <text x="1240" y="472" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• aiChatProvider (Message History)</text>
+    <text x="1240" y="492" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• currencyProvider (INR, USD, EUR, GBP)</text>
+    <text x="1240" y="512" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• connectivityProvider (Pure Dart DNS)</text>
+    <text x="1240" y="532" font-family="Arial, sans-serif" font-size="11" fill="#34D399">Persistent Secure State</text>
+  </g>
+
+  <!-- Connectors Layer 2 -> Layer 3 -->
+  <line x1="200" y1="570" x2="200" y2="620" stroke="#818CF8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="600" y1="570" x2="600" y2="620" stroke="#818CF8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="1000" y1="570" x2="1000" y2="620" stroke="#818CF8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="1375" y1="570" x2="1375" y2="620" stroke="#818CF8" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- LAYER 3: DATA & NETWORKING / STORAGE LAYER -->
+  <g filter="url(#dropShadow)">
+    <rect x="50" y="620" width="1500" height="200" rx="16" fill="#1E293B" stroke="#5B21B6" stroke-width="2"/>
+    <rect x="50" y="620" width="1500" height="36" rx="16" fill="url(#netGrad)"/>
+    <text x="75" y="644" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#FFFFFF">3. DATA LAYER (Repositories, Network Client, Hardware Secure Storage)</text>
+    <text x="1520" y="644" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#DDD6FE" text-anchor="end">Dio HTTP + Queued Interceptors</text>
+ 
+    <!-- Data Card 1: Repositories -->
+    <rect x="75" y="675" width="440" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="90" y="700" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#C084FC">Domain Repositories</text>
+    <text x="90" y="722" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• AuthRepository (Google OAuth, Token Storage, Me)</text>
+    <text x="90" y="742" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• DailyExpenseRepository (CRUD, Search, Filtering)</text>
+    <text x="90" y="762" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• ExpenseTypeRepository &amp; AiRepository</text>
+    <text x="90" y="782" font-family="Arial, sans-serif" font-size="11" fill="#34D399">Clean Separation of Concerns</text>
+
+    <!-- Data Card 2: ApiClient & Interceptors -->
+    <rect x="535" y="675" width="470" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="550" y="700" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#C084FC">ApiClient (Dio Engine)</text>
+    <text x="550" y="722" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• BaseUrl: https://expensemanager-0ac3.onrender.com</text>
+    <text x="550" y="742" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• AuthInterceptor (Bearer Token Injection &amp; 401 Auto-Clear)</text>
+    <text x="550" y="762" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• _RetryInterceptor (Auto-retries on Render Cold-Starts)</text>
+    <text x="550" y="782" font-family="Arial, sans-serif" font-size="11" fill="#38BDF8">60s Timeout Safeguards</text>
+
+    <!-- Data Card 3: Storage & Local Services -->
+    <rect x="1025" y="675" width="500" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="1040" y="700" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#F472B6">Local Storage &amp; System Services</text>
+    <text x="1040" y="722" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• SecureStorageService (Android Keystore / iOS Keychain AES-256)</text>
+    <text x="1040" y="742" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• ConnectivityService (Pure Dart DNS: google.com, cloudflare.com)</text>
+    <text x="1040" y="762" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• ExpenseExportService (CSV / XLSX Generator &amp; Sharing)</text>
+    <text x="1040" y="782" font-family="Arial, sans-serif" font-size="11" fill="#34D399">Zero MissingPluginException Guarantee</text>
+  </g>
+
+  <!-- Connectors Layer 3 -> Layer 4 -->
+  <line x1="300" y1="820" x2="300" y2="870" stroke="#F472B6" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="770" y1="820" x2="770" y2="870" stroke="#F472B6" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="1250" y1="820" x2="1250" y2="870" stroke="#F472B6" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- LAYER 4: BACKEND & CLOUD INFRASTRUCTURE -->
+  <g filter="url(#dropShadow)">
+    <rect x="50" y="870" width="1500" height="190" rx="16" fill="#1E293B" stroke="#9A3412" stroke-width="2"/>
+    <rect x="50" y="870" width="1500" height="36" rx="16" fill="url(#extGrad)"/>
+    <text x="75" y="894" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#FFFFFF">4. BACKEND API, CLOUD &amp; EXTERNAL SERVICES</text>
+    <text x="1520" y="894" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#FED7AA" text-anchor="end">Cloud Hosted (Render)</text>
+
+    <!-- Ext Card 1: Google OAuth -->
+    <rect x="75" y="920" width="320" height="120" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="90" y="945" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#FB923C">Google Identity Services</text>
+    <text x="90" y="967" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• Google Sign-In SDK (Native)</text>
+    <text x="90" y="987" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• ID Token &amp; OAuth 2.0 Flow</text>
+    <text x="90" y="1007" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• SHA-1 Verified Security</text>
+    <text x="90" y="1027" font-family="Arial, sans-serif" font-size="11" fill="#34D399">Hardware OAuth Handshake</text>
+
+    <!-- Ext Card 2: Render API Server -->
+    <rect x="415" y="920" width="410" height="120" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="430" y="945" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#FB923C">MobyMoney REST API Server</text>
+    <text x="430" y="967" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• /api/mobile/auth/google &amp; /auth/me</text>
+    <text x="430" y="987" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• /dailyexpense &amp; /expensetype</text>
+    <text x="430" y="1007" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• /chart-data, /download-report, /delete-expenses</text>
+    <text x="430" y="1027" font-family="Arial, sans-serif" font-size="11" fill="#60A5FA">Render Cloud Managed Node/Python Backend</text>
+
+    <!-- Ext Card 3: AI Inference Engine -->
+    <rect x="845" y="920" width="330" height="120" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="860" y="945" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#FB923C">AI Intelligence Server</text>
+    <text x="860" y="967" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• /api/ai/chat (NLP Financial Advice)</text>
+    <text x="860" y="987" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• /api/ai/confirm-delete</text>
+    <text x="860" y="1007" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• /api/ai/confirm-classification</text>
+    <text x="860" y="1027" font-family="Arial, sans-serif" font-size="11" fill="#C084FC">Context-Aware Advisory</text>
+
+    <!-- Ext Card 4: Database & Storage -->
+    <rect x="1195" y="920" width="330" height="120" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <text x="1210" y="945" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#FB923C">Persistent Cloud Database</text>
+    <text x="1210" y="967" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• User Identity &amp; Auth Tokens</text>
+    <text x="1210" y="987" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• Daily Expenses &amp; Category Schema</text>
+    <text x="1210" y="1007" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• Historical Trend Ledger</text>
+    <text x="1210" y="1027" font-family="Arial, sans-serif" font-size="11" fill="#34D399">Secure Multi-tenant Isolation</text>
+  </g>
+</svg>

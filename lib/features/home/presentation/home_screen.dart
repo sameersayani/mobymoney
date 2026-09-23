@@ -537,24 +537,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Row(
-                                          children: [
-                                            const PhosphorIcon(
-                                              PhosphorIconsBold.chartPieSlice,
-                                              size: 11,
-                                              color: Colors.white70,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Essential Ratio',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w500,
+                                        Expanded(
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const PhosphorIcon(
+                                                PhosphorIconsBold.chartPieSlice,
+                                                size: 11,
                                                 color: Colors.white70,
                                               ),
-                                            ),
-                                          ],
+                                              const SizedBox(width: 4),
+                                              Flexible(
+                                                child: Text(
+                                                  'ESSENTIAL',
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.w700,
+                                                    letterSpacing: 0.6,
+                                                    color: Colors.white70,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
+                                        const SizedBox(width: 4),
                                         Text(
                                           '${summary.essentialPercentage}%',
                                           style: GoogleFonts.inter(
@@ -967,11 +976,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          setState(() => _currentNavIndex = index);
-          if (index == 2) {
-            final date = ref.read(analyticsSelectedDateProvider);
-            ref.read(analyticsSummaryProvider.notifier).loadAnalyticsData(date: date);
-            ref.read(chartDataProvider.notifier).refresh(date: date);
+          if (_currentNavIndex != index) {
+            AppSnackBar.dismissImmediate();
+            setState(() => _currentNavIndex = index);
+            if (index == 2) {
+              final date = ref.read(analyticsSelectedDateProvider);
+              ref.read(analyticsSummaryProvider.notifier).loadAnalyticsData(date: date);
+              ref.read(chartDataProvider.notifier).refresh(date: date);
+            }
           }
         },
         behavior: HitTestBehavior.opaque,

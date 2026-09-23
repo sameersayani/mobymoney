@@ -12,6 +12,7 @@ import 'package:mobymoney/features/expenses/presentation/expense_detail_screen.d
 import 'package:mobymoney/features/expenses/presentation/expenses_screen.dart';
 import 'package:mobymoney/features/home/presentation/home_screen.dart';
 import 'package:mobymoney/features/settings/presentation/expense_types_screen.dart';
+import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/features/settings/presentation/settings_screen.dart';
 import 'package:mobymoney/features/splash/presentation/splash_screen.dart';
 
@@ -36,6 +37,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     refreshListenable: refreshListenable,
+    observers: [AppSnackBar.routeObserver],
     debugLogDiagnostics: false,
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);

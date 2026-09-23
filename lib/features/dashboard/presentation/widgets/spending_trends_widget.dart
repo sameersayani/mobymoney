@@ -128,7 +128,7 @@ class _SpendingTrendsWidgetState extends ConsumerState<SpendingTrendsWidget> {
 
           // 7-Day Bar Chart
           SizedBox(
-            height: 120,
+            height: 134,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -148,15 +148,17 @@ class _SpendingTrendsWidgetState extends ConsumerState<SpendingTrendsWidget> {
                         children: [
                           if (isSelected)
                             Container(
-                              margin: const EdgeInsets.only(bottom: 6),
+                              margin: const EdgeInsets.only(bottom: 4),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
+                                  horizontal: 5, vertical: 2),
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 currency.formatMinor(item.amountMinor, compact: true),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w700,
@@ -165,13 +167,13 @@ class _SpendingTrendsWidgetState extends ConsumerState<SpendingTrendsWidget> {
                               ),
                             )
                           else
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 18),
                           // Bar
                           Container(
                             width: 24,
                             height: item.amountMinor == 0
                                 ? 4.0
-                                : ((item.ratio * 58.0) + 10.0).clamp(10.0, 68.0),
+                                : ((item.ratio * 54.0) + 8.0).clamp(8.0, 62.0),
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? AppColors.primary
@@ -183,10 +185,11 @@ class _SpendingTrendsWidgetState extends ConsumerState<SpendingTrendsWidget> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           // Day Label
                           Text(
                             item.day,
+                            maxLines: 1,
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: isSelected

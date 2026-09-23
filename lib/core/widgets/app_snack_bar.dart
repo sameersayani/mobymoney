@@ -10,35 +10,68 @@ enum SnackBarType {
   warning,
 }
 
-/// A centralized, production-ready floating notification system.
-/// Uses an independent [OverlayEntry] above the UI so that:
+/// Route observer to automatically clean up active notifications on route transitions
+class AppSnackBarRouteObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    AppSnackBar.dismissImmediate();
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    AppSnackBar.dismissImmediate();
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    AppSnackBar.dismissImmediate();
+  }
+}
+
+/// A centralized, production-grade floating notification system.
+/// Uses a single managed [OverlayEntry] above the UI so that:
 /// - Scaffold layout is never resized.
 /// - The Floating Action Button (FAB) NEVER jumps or moves upward.
-/// - Bottom navigation bars and safe areas are respected dynamically.
-/// - Animations (fade + slide) are smooth and memory-safe.
+/// - Rapid clicks/calls are debounced (no multiple stacking or queuing 3-5 times).
+/// - Older notifications are immediately cleared before showing a new one (no overlapping).
+/// - Automatically dismissed when navigating to new screens/pages.
 class AppSnackBar {
   static OverlayEntry? _activeEntry;
-  static Timer? _dismissTimer;
-  static _AppSnackBarOverlayState? _activeState;
+  static String? _lastMessage;
+  static DateTime? _lastShowTime;
+  static final AppSnackBarRouteObserver routeObserver = AppSnackBarRouteObserver();
 
   static void show(
     BuildContext? context, {
     required String message,
     SnackBarType type = SnackBarType.success,
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = const Duration(milliseconds: 2400),
     SnackBarAction? action,
   }) {
-    // 1. Resolve overlay context safely
+    // 1. Debounce rapid duplicate spam (e.g. user clicking 2+ times or multiple state emits)
+    final now = DateTime.now();
+    if (_lastMessage == message &&
+        _lastShowTime != null &&
+        now.difference(_lastShowTime!) < const Duration(milliseconds: 1200)) {
+      return;
+    }
+    _lastMessage = message;
+    _lastShowTime = now;
+
+    // 2. Resolve overlay context safely
     final targetContext = context ?? rootNavigatorKey.currentContext;
     if (targetContext == null) return;
 
     final overlay = Overlay.maybeOf(targetContext, rootOverlay: true);
     if (overlay == null) return;
 
-    // 2. Dismiss any existing active notification smoothly
+    // 3. Immediately dismiss and remove any existing active notification (prevents overlaps)
     dismissImmediate();
 
-    // 3. Create new overlay entry
+    // 4. Create single fresh overlay entry
     late final OverlayEntry entry;
     entry = OverlayEntry(
       builder: (ctx) => _AppSnackBarOverlay(
@@ -47,12 +80,12 @@ class AppSnackBar {
         type: type,
         duration: duration,
         action: action,
-        onCreated: (state) => _activeState = state,
         onDismissed: () {
           if (_activeEntry == entry) {
-            _activeEntry?.remove();
+            try {
+              entry.remove();
+            } catch (_) {}
             _activeEntry = null;
-            _activeState = null;
           }
         },
       ),
@@ -64,13 +97,10 @@ class AppSnackBar {
 
   /// Manually dismiss current notification immediately
   static void dismissImmediate() {
-    _dismissTimer?.cancel();
-    _dismissTimer = null;
-    if (_activeState != null) {
-      _activeState?.dismiss();
-      _activeState = null;
-    } else if (_activeEntry != null) {
-      _activeEntry?.remove();
+    if (_activeEntry != null) {
+      try {
+        _activeEntry!.remove();
+      } catch (_) {}
       _activeEntry = null;
     }
   }
@@ -97,7 +127,6 @@ class _AppSnackBarOverlay extends StatefulWidget {
   final SnackBarType type;
   final Duration duration;
   final SnackBarAction? action;
-  final ValueChanged<_AppSnackBarOverlayState> onCreated;
   final VoidCallback onDismissed;
 
   const _AppSnackBarOverlay({
@@ -106,7 +135,6 @@ class _AppSnackBarOverlay extends StatefulWidget {
     required this.type,
     required this.duration,
     this.action,
-    required this.onCreated,
     required this.onDismissed,
   });
 
@@ -125,7 +153,6 @@ class _AppSnackBarOverlayState extends State<_AppSnackBarOverlay>
   @override
   void initState() {
     super.initState();
-    widget.onCreated(this);
 
     _controller = AnimationController(
       vsync: this,
@@ -182,10 +209,10 @@ class _AppSnackBarOverlayState extends State<_AppSnackBarOverlay>
 
     // Calculate dynamic bottom offset:
     // If keyboard is open -> float comfortably above keyboard (bottomInset + 16)
-    // If keyboard is closed -> float above the FAB & BottomNav area (bottomPadding + 144)
+    // If keyboard is closed -> float cleanly above the bottom navigation bar (bottomPadding + 76)
     final double bottomOffset = isKeyboardOpen
         ? (bottomInset + 16.0)
-        : (bottomPadding > 0 ? bottomPadding + 140.0 : 144.0);
+        : (bottomPadding > 0 ? bottomPadding + 76.0 : 88.0);
 
     // Color configuration per SnackBarType
     Color bgColor;

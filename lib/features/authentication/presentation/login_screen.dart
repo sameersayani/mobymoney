@@ -8,7 +8,6 @@ import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
 import 'package:mobymoney/features/authentication/presentation/widgets/custom_text_field.dart';
-import 'package:mobymoney/shared/widgets/brand_logo_title.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -357,28 +356,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 36),
 
-                // Footer: "New to Moby money? Create account"
+                // Footer: "New to Smart Expense Manager? Create account"
                 Center(
                   child: Wrap(
                     alignment: WrapAlignment.center,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
-                        'New to ',
+                        'New to Smart Expense Manager? ',
                         style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.slate600,
-                        ),
-                      ),
-                      const BrandLogoTitle(
-                        fontSize: 15,
-                        spacing: 3,
-                      ),
-                      Text(
-                        '? ',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w400,
                           color: AppColors.slate600,
                         ),
@@ -390,8 +377,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: Text(
                           'Create account',
                           style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.primary,
                           ),
                         ),

@@ -9,7 +9,6 @@ import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/features/dashboard/domain/models/dashboard_summary_model.dart';
 import 'package:mobymoney/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
-import 'package:mobymoney/features/settings/presentation/providers/currency_provider.dart';
 import 'add_expense_bottom_sheet.dart';
 
 class RecentExpenseTile extends ConsumerWidget {
@@ -222,7 +221,6 @@ class RecentExpenseTile extends ConsumerWidget {
   }
 
   void _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
-    final currency = ref.read(currencyProvider);
     final rupees = item.amountMinor ~/ 100;
     showDialog(
       context: context,
@@ -324,7 +322,7 @@ class RecentExpenseTile extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${currency.symbol}$rupees',
+                        '${item.currency.symbol}$rupees',
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -416,7 +414,6 @@ class RecentExpenseTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currency = ref.watch(currencyProvider);
     final displayCategory = _resolveExpenseTypeName(ref);
     final rupees = item.amountMinor ~/ 100;
     final iconBg = _getCategoryBgColor(item.categoryName, item.title);
@@ -492,7 +489,7 @@ class RecentExpenseTile extends ConsumerWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            '${currency.symbol}$rupees',
+                            '${item.currency.symbol}$rupees',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,

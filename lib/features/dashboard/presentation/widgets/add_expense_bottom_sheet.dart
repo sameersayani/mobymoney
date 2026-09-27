@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:mobymoney/core/constants/app_currency.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/features/expenses/domain/models/expense_type_model.dart';
@@ -40,6 +41,7 @@ class AddExpenseDialog extends ConsumerStatefulWidget {
 class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
   int? _selectedExpenseTypeId;
   DateTime _selectedDate = DateTime.now();
+  AppCurrency _selectedCurrency = AppCurrency.inr;
   late final TextEditingController _nameController;
   late final TextEditingController _unitPriceController;
   late final TextEditingController _amountController;
@@ -67,6 +69,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
       _amountController = TextEditingController(text: totalAmount);
       _isReallyNeeded = exp.tag == ExpenseTag.needed;
       _selectedExpenseTypeId = exp.expenseTypeId;
+      _selectedCurrency = exp.currency;
       if (exp.rawDate != null) {
         _selectedDate = exp.rawDate!;
       }
@@ -74,6 +77,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
       _nameController = TextEditingController(text: '');
       _unitPriceController = TextEditingController(text: '');
       _amountController = TextEditingController(text: '');
+      _selectedCurrency = ref.read(currencyProvider);
     }
   }
 
@@ -120,6 +124,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
     setState(() {
       _selectedExpenseTypeId = null;
       _selectedDate = DateTime.now();
+      _selectedCurrency = ref.read(currencyProvider);
       _nameController.text = '';
       _unitPriceController.text = '';
       _amountController.text = '';
@@ -260,6 +265,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
               unitPrice: unitPrice,
               amount: totalAmount,
               reallyNeeded: _isReallyNeeded,
+              currency: _selectedCurrency,
             );
         if (mounted) {
           AppSnackBar.showSuccess(context, 'Expense updated successfully!');
@@ -274,6 +280,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
               unitPrice: unitPrice,
               amount: totalAmount,
               reallyNeeded: _isReallyNeeded,
+              currency: _selectedCurrency,
             );
         if (mounted) {
           AppSnackBar.showSuccess(context, 'Expense added successfully!');
@@ -431,7 +438,14 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
 
                     const SizedBox(height: 16),
 
-                    // 5. QUANTITY & UNIT PRICE ROW
+                    // 5. CURRENCY SELECTION ROW
+                    _buildSectionLabel('CURRENCY'),
+                    const SizedBox(height: 8),
+                    _buildCurrencySelectorRow(),
+
+                    const SizedBox(height: 16),
+
+                    // 6. QUANTITY & UNIT PRICE ROW
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -464,19 +478,19 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
 
                     const SizedBox(height: 16),
 
-                    // 6. TOTAL AMOUNT
+                    // 7. TOTAL AMOUNT
                     _buildSectionLabel('TOTAL AMOUNT'),
                     const SizedBox(height: 8),
                     _buildTotalAmountField(),
 
                     const SizedBox(height: 18),
 
-                    // 7. REALLY NEEDED? BANNER CARD
+                    // 8. REALLY NEEDED? BANNER CARD
                     _buildReallyNeededCard(),
 
                     const SizedBox(height: 22),
 
-                    // 8. ACTION BUTTONS ROW: [Cancel] & [Add/Save Expense]
+                    // 9. ACTION BUTTONS ROW: [Cancel] & [Add/Save Expense]
                     Row(
                       children: [
                         // Cancel Button
@@ -1015,9 +1029,76 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
     );
   }
 
+  Widget _buildCurrencySelectorRow() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: AppCurrency.values.map((curr) {
+          final isSelected = curr == _selectedCurrency;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _selectedCurrency = curr);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      curr.flag,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      curr.code,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        color: isSelected ? Colors.white : AppColors.slate700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildUnitPriceField() {
     final hasError = _amountError != null;
-    final currency = ref.watch(currencyProvider);
     return Container(
       height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1041,7 +1122,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
       child: Row(
         children: [
           Text(
-            currency.symbol,
+            _selectedCurrency.symbol,
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -1077,7 +1158,6 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
 
   Widget _buildTotalAmountField() {
     final hasError = _amountError != null;
-    final currency = ref.watch(currencyProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1104,7 +1184,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
           child: Row(
             children: [
               Text(
-                currency.symbol,
+                _selectedCurrency.symbol,
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,

@@ -102,7 +102,7 @@ class PrivacyPolicyDialog extends StatelessWidget {
                     _buildSection(
                       title: '1. Financial Data Protection',
                       content:
-                          'MobyMoney is designed with privacy-first financial architecture. Your personal transaction records, expenses, receipts, and custom categories are stored securely using industry-standard AES encryption both in transit (TLS 1.3) and at rest.',
+                          'SmartExpense manager is designed with privacy-first financial architecture. Your personal transaction records, expenses, receipts, and custom categories are stored securely using industry-standard AES encryption both in transit (TLS 1.3) and at rest.',
                     ),
                     _buildSection(
                       title: '2. Information We Collect',
@@ -127,7 +127,7 @@ class PrivacyPolicyDialog extends StatelessWidget {
                     _buildSection(
                       title: '6. Contact & Data Protection Officer',
                       content:
-                          'If you have questions about privacy practices or wish to submit a data inquiry, please contact our privacy team at privacy@mobymoney.com.',
+                          'If you have questions about privacy practices or wish to submit a data inquiry, please contact our support team at support@yesitech.com.',
                     ),
                     const SizedBox(height: 16),
                     Container(
@@ -147,7 +147,7 @@ class PrivacyPolicyDialog extends StatelessWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Your financial records are encrypted and protected by MobyMoney Secure Shield.',
+                              'Your financial records are encrypted and protected by SmartExpense Secure Shield.',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,

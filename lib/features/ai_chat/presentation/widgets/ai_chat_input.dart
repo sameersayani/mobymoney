@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
@@ -45,6 +46,7 @@ class _AiChatInputState extends State<AiChatInput> {
     if (!_hasText || widget.isTyping) return;
     final text = _controller.text;
     _controller.clear();
+    HapticFeedback.lightImpact();
     widget.onSend(text);
   }
 
@@ -77,7 +79,7 @@ class _AiChatInputState extends State<AiChatInput> {
             Expanded(
               child: Container(
                 constraints: const BoxConstraints(
-                  minHeight: 46,
+                  minHeight: 48,
                   maxHeight: 120,
                 ),
                 decoration: BoxDecoration(
@@ -85,33 +87,51 @@ class _AiChatInputState extends State<AiChatInput> {
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: _hasText
-                        ? AppColors.primary.withValues(alpha: 0.4)
+                        ? AppColors.primary.withValues(alpha: 0.5)
                         : AppColors.inputFieldBorder,
                     width: 1.2,
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: TextField(
-                  controller: _controller,
-                  maxLines: null,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => _handleSend(),
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.neutralDark,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Ask Moby AI anything about your money...',
-                    hintStyle: GoogleFonts.inter(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.slate400,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: PhosphorIcon(
+                        PhosphorIconsFill.sparkle,
+                        size: 17,
+                        color: _hasText
+                            ? AppColors.primary
+                            : AppColors.slate400,
+                      ),
                     ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 13),
-                  ),
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        maxLines: null,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _handleSend(),
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.neutralDark,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Ask Moby AI or log an expense...',
+                          hintStyle: GoogleFonts.inter(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w400,
+                            color: AppColors.slate400,
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 13),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -126,20 +146,20 @@ class _AiChatInputState extends State<AiChatInput> {
                 borderRadius: BorderRadius.circular(24),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  width: 46,
-                  height: 46,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: _hasText && !widget.isTyping
                         ? const LinearGradient(
                             colors: [
-                              AppColors.primary,
-                              Color(0xFF0D9488),
+                              Color(0xFF0F766E),
+                              Color(0xFF14B8A6),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           )
-                        : LinearGradient(
+                        : const LinearGradient(
                             colors: [
                               AppColors.slate200,
                               AppColors.slate300,

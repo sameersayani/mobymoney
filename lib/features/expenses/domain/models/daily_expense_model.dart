@@ -13,6 +13,7 @@ class DailyExpenseItemModel {
   final int quantity;
   final int unitPriceMinor;
   final int? expenseTypeId;
+  final AppCurrency currency;
 
   const DailyExpenseItemModel({
     required this.id,
@@ -25,6 +26,7 @@ class DailyExpenseItemModel {
     this.quantity = 1,
     this.unitPriceMinor = 0,
     this.expenseTypeId,
+    this.currency = AppCurrency.inr,
   });
 
   factory DailyExpenseItemModel.fromJson(Map<String, dynamic> json) {
@@ -34,14 +36,19 @@ class DailyExpenseItemModel {
     final rawUnitPrice = json['unit_price'] ?? json['price'] ?? 0;
     final int unitPriceMinor = _parseAmountToMinor(rawUnitPrice);
 
-    // Prioritize timestamp fields that have exact time (createdon, created_at, etc.) over date-only strings
-    final rawDate = json['createdon'] ??
+    final rawCurrency = json['currency'] ?? json['currency_code'] ?? json['currencyCode'];
+    final AppCurrency currency = AppCurrency.fromCode(rawCurrency?.toString());
+
+    // Prioritize user's business date (date, expense_date) over database insertion timestamps (createdon, created_at)
+    final rawDate = json['date'] ??
+        json['expense_date'] ??
+        json['expensedate'] ??
+        json['createdon'] ??
         json['created_on'] ??
         json['created_at'] ??
         json['createdAt'] ??
         json['timestamp'] ??
         json['time'] ??
-        json['date'] ??
         '';
     DateTime parsedDate;
     try {
@@ -121,16 +128,26 @@ class DailyExpenseItemModel {
       quantity: quantity,
       unitPriceMinor: unitPriceMinor > 0 ? unitPriceMinor : (quantity > 0 ? amountMinor ~/ quantity : amountMinor),
       expenseTypeId: expTypeId,
+      currency: currency,
     );
   }
 
   RecentExpenseItemModel toRecentExpenseItem() {
     final now = DateTime.now();
-    final isToday =
-        date.year == now.year && date.month == now.month && date.day == now.day;
-    final dateStr = isToday
-        ? 'Today, ${DateFormat('hh:mm a').format(date)}'
-        : DateFormat('d MMM • hh:mm a').format(date);
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+    final expenseMidnight = DateTime(date.year, date.month, date.day);
+    final dayDiff = todayMidnight.difference(expenseMidnight).inDays;
+
+    final String dateStr;
+    if (dayDiff == 0) {
+      dateStr = 'Today, ${DateFormat('hh:mm a').format(date)}';
+    } else if (dayDiff == 1) {
+      dateStr = 'Yesterday, ${DateFormat('hh:mm a').format(date)}';
+    } else if (date.year == now.year) {
+      dateStr = DateFormat('d MMM • hh:mm a').format(date);
+    } else {
+      dateStr = DateFormat('d MMM yyyy • hh:mm a').format(date);
+    }
 
     return RecentExpenseItemModel(
       id: id,
@@ -144,6 +161,7 @@ class DailyExpenseItemModel {
       quantity: quantity,
       unitPriceMinor: unitPriceMinor,
       rawDate: date,
+      currency: currency,
     );
   }
 
@@ -166,6 +184,7 @@ class DailyExpenseResponseModel {
   final int essentialExpenditureMinor;
   final int nonEssentialExpenditureMinor;
   final List<DailyExpenseItemModel> items;
+  final Map<String, dynamic>? rawTotalsByCurrency;
 
   const DailyExpenseResponseModel({
     required this.status,
@@ -173,6 +192,7 @@ class DailyExpenseResponseModel {
     required this.essentialExpenditureMinor,
     required this.nonEssentialExpenditureMinor,
     required this.items,
+    this.rawTotalsByCurrency,
   });
 
   factory DailyExpenseResponseModel.fromJson(Map<String, dynamic> json) {
@@ -196,6 +216,12 @@ class DailyExpenseResponseModel {
           json['discretionaryAmount'],
     );
 
+    final rawTotals = json['totals_by_currency'] is Map<String, dynamic>
+        ? json['totals_by_currency'] as Map<String, dynamic>
+        : (json['totals_by_currency'] is Map
+            ? Map<String, dynamic>.from(json['totals_by_currency'])
+            : null);
+
     final rawData = json['data'] ?? json['expenses'] ?? json['items'];
     List<DailyExpenseItemModel> itemsList = [];
     if (rawData is List) {
@@ -205,7 +231,7 @@ class DailyExpenseResponseModel {
           .toList();
     }
 
-    // Compute robust fallback sums if server returns 0 or missing in root aggregation
+    // Compute fallback sums if server returns 0 or missing in root aggregation
     if (itemsList.isNotEmpty) {
       final computedSum = itemsList.fold<int>(0, (sum, it) => sum + it.amountMinor);
       if (totalMinor <= 0 && computedSum > 0) {
@@ -236,6 +262,7 @@ class DailyExpenseResponseModel {
       essentialExpenditureMinor: essentialMinor,
       nonEssentialExpenditureMinor: nonEssentialMinor,
       items: itemsList,
+      rawTotalsByCurrency: rawTotals,
     );
   }
 
@@ -246,6 +273,7 @@ class DailyExpenseResponseModel {
       essentialExpenditureMinor: 0,
       nonEssentialExpenditureMinor: 0,
       items: [],
+      rawTotalsByCurrency: null,
     );
   }
 
@@ -295,14 +323,84 @@ class DailyExpenseResponseModel {
       return b.id.compareTo(a.id);
     });
 
-    // Group items into days for weekly spending trend
+    // Compute separate totals for EACH currency independently
+    final Map<AppCurrency, CurrencyTotals> computedTotalsByCurrency = {};
+
+    if (rawTotalsByCurrency != null && rawTotalsByCurrency!.isNotEmpty) {
+      rawTotalsByCurrency!.forEach((code, data) {
+        if (data is Map<String, dynamic>) {
+          final curr = AppCurrency.fromCode(code);
+          final count = items.where((it) => it.currency == curr).length;
+          computedTotalsByCurrency[curr] = CurrencyTotals.fromJson(code, data, count: count);
+        } else if (data is Map) {
+          final curr = AppCurrency.fromCode(code);
+          final count = items.where((it) => it.currency == curr).length;
+          computedTotalsByCurrency[curr] =
+              CurrencyTotals.fromJson(code, Map<String, dynamic>.from(data), count: count);
+        }
+      });
+    }
+
+    // Always ensure every currency present in items is represented with clean calculated totals
+    for (final curr in AppCurrency.values) {
+      final currencyItems = items.where((it) => it.currency == curr).toList();
+      if (currencyItems.isNotEmpty) {
+        final total = currencyItems.fold<int>(0, (sum, it) => sum + it.amountMinor);
+        final essential = currencyItems
+            .where((it) => it.tag == ExpenseTag.needed)
+            .fold<int>(0, (sum, it) => sum + it.amountMinor);
+        final nonEssential = currencyItems
+            .where((it) => it.tag == ExpenseTag.notNeeded)
+            .fold<int>(0, (sum, it) => sum + it.amountMinor);
+
+        // If not already provided by backend or if backend total is 0 while items exist
+        final existing = computedTotalsByCurrency[curr];
+        if (existing == null || existing.totalExpenditureMinor <= 0) {
+          computedTotalsByCurrency[curr] = CurrencyTotals(
+            currency: curr,
+            totalExpenditureMinor: total,
+            essentialExpenditureMinor: essential,
+            nonEssentialExpenditureMinor: nonEssential,
+            expenseCount: currencyItems.length,
+          );
+        }
+      }
+    }
+
+    // Determine primary display totals (for active or majority currency)
+    // If only 1 currency present in items, use that currency's totals
+    // If multiple present, use selected default currency if present, or first available
+    final AppCurrency primaryCurrency = computedTotalsByCurrency.containsKey(currency)
+        ? currency
+        : (computedTotalsByCurrency.keys.isNotEmpty
+            ? computedTotalsByCurrency.keys.first
+            : currency);
+
+    final CurrencyTotals? primaryTotals = computedTotalsByCurrency[primaryCurrency];
+
+    final int effectiveTotal = primaryTotals?.totalExpenditureMinor ??
+        (items.isEmpty ? 0 : totalExpenditureMinor);
+    final int effectiveEssential = primaryTotals?.essentialExpenditureMinor ??
+        (items.isEmpty ? 0 : essentialExpenditureMinor);
+    final int effectiveNonEssential = primaryTotals?.nonEssentialExpenditureMinor ??
+        (items.isEmpty ? 0 : nonEssentialExpenditureMinor);
+
+    final int effectiveEssentialPct = effectiveTotal > 0
+        ? ((effectiveEssential / effectiveTotal) * 100).round().clamp(0, 100)
+        : 0;
+    final int effectiveNonEssentialPct = effectiveTotal > 0
+        ? ((effectiveNonEssential / effectiveTotal) * 100).round().clamp(0, 100)
+        : 0;
+    final int effectiveDailyAvg = daysInMonth > 0 ? (effectiveTotal / daysInMonth).round() : 0;
+
+    // Group items for primary currency weekly spending trend
     final now = DateTime.now();
     final bool isCurrentMonth = selectedDate.year == now.year && selectedDate.month == now.month;
     final DateTime referenceDate = isCurrentMonth
         ? now
         : DateTime(selectedDate.year, selectedDate.month + 1, 0);
 
-    // Build trend for 7 days ending at referenceDate
+    // Build trend for 7 days ending at referenceDate for primaryCurrency
     final List<DateTime> sevenDays = [];
     for (int i = 6; i >= 0; i--) {
       sevenDays.add(referenceDate.subtract(Duration(days: i)));
@@ -313,12 +411,14 @@ class DailyExpenseResponseModel {
       final targetDate = sevenDays[i];
       int sumMinor = 0;
       for (final item in items) {
-        final sameDate = item.date.year == targetDate.year &&
-            item.date.month == targetDate.month &&
-            item.date.day == targetDate.day;
-        final sameDayInMonth = (selectedDate.month == targetDate.month) && (item.date.day == targetDate.day);
-        if (sameDate || sameDayInMonth) {
-          sumMinor += item.amountMinor;
+        if (item.currency == primaryCurrency) {
+          final sameDate = item.date.year == targetDate.year &&
+              item.date.month == targetDate.month &&
+              item.date.day == targetDate.day;
+          final sameDayInMonth = (selectedDate.month == targetDate.month) && (item.date.day == targetDate.day);
+          if (sameDate || sameDayInMonth) {
+            sumMinor += item.amountMinor;
+          }
         }
       }
       dayAmounts[i] = sumMinor;
@@ -337,8 +437,8 @@ class DailyExpenseResponseModel {
       final amount = dayAmounts[i] ?? 0;
       final double ratio = amount > 0 ? (amount / maxSpending).clamp(0.0, 1.0) : 0.0;
       final label = amount > 0
-          ? currency.formatMinor(amount, compact: true)
-          : '${currency.symbol}0';
+          ? primaryCurrency.formatMinor(amount, compact: true)
+          : '${primaryCurrency.symbol}0';
 
       final isToday = isCurrentMonth &&
           dayDate.year == now.year &&
@@ -357,21 +457,22 @@ class DailyExpenseResponseModel {
     }
 
     return DashboardSummaryModel(
-      totalSpendingMinor: totalExpenditureMinor,
+      totalSpendingMinor: effectiveTotal,
       vsLastMonthPercentage: 0,
-      dailyAverageMinor: dailyAverageMinor,
+      dailyAverageMinor: effectiveDailyAvg,
       budgetLeftMinor: 0,
-      budgetCapMinor: totalExpenditureMinor,
-      essentialAmountMinor: essentialExpenditureMinor,
-      essentialPercentage: essentialPercentage,
-      discretionaryAmountMinor: nonEssentialExpenditureMinor,
-      discretionaryPercentage: nonEssentialPercentage,
+      budgetCapMinor: effectiveTotal,
+      essentialAmountMinor: effectiveEssential,
+      essentialPercentage: effectiveEssentialPct,
+      discretionaryAmountMinor: effectiveNonEssential,
+      discretionaryPercentage: effectiveNonEssentialPct,
       activePeriodLabel: activePeriod,
       formattedMonth: monthLabel,
       weeklyTrend: trendList,
       recentExpenses: recentList,
-      aiInsightText: totalExpenditureMinor > 0
-          ? 'Essential spending accounts for $essentialPercentage% of total this month.'
+      totalsByCurrency: computedTotalsByCurrency,
+      aiInsightText: effectiveTotal > 0
+          ? 'Essential spending accounts for $effectiveEssentialPct% of total this month.'
           : 'No expenses logged for this month yet. Tap + to add your first expense!',
     );
   }

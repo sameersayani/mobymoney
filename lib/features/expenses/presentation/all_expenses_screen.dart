@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:mobymoney/core/constants/app_currency.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/core/widgets/compact_month_year_picker_dialog.dart';
 import 'package:mobymoney/core/widgets/shimmer_loading.dart';
@@ -191,12 +192,6 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
                     break;
                 }
 
-                final totalSpentMinor = filtered.fold<int>(
-                  0,
-                  (sum, item) => sum + item.amountMinor,
-                );
-                final totalRupees = totalSpentMinor ~/ 100;
-
                 return RefreshIndicator(
                   color: AppColors.primary,
                   onRefresh: () async {
@@ -212,8 +207,7 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 14, 20, 100),
                     children: [
                       // KPI Card
-                      _buildSummaryCard(
-                          totalRupees, filtered.length, summary, currency.symbol),
+                      _buildSummaryCard(filtered, summary, currency),
 
                       const SizedBox(height: 16),
 
@@ -395,11 +389,16 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
   }
 
   Widget _buildSummaryCard(
-    int totalRupees,
-    int count,
+    List<RecentExpenseItemModel> filteredItems,
     DashboardSummaryModel summary,
-    String currencySymbol,
+    AppCurrency defaultCurrency,
   ) {
+    // Group filtered items by currency
+    final Map<AppCurrency, int> currencyTotals = {};
+    for (final it in filteredItems) {
+      currencyTotals[it.currency] = (currencyTotals[it.currency] ?? 0) + it.amountMinor;
+    }
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -444,7 +443,7 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '$count expenses',
+                  '${filteredItems.length} expenses',
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -454,20 +453,72 @@ class _AllExpensesScreenState extends ConsumerState<AllExpensesScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '$currencySymbol${NumberFormat('#,##,###').format(totalRupees)}',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: -0.8,
+          const SizedBox(height: 10),
+          if (currencyTotals.length > 1) ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: currencyTotals.entries.map((entry) {
+                  final curr = entry.key;
+                  final amt = entry.value ~/ 100;
+                  final count = filteredItems.where((it) => it.currency == curr).length;
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white24, width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          curr.flag,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${curr.symbol}${NumberFormat('#,##,###').format(amt)}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '($count)',
+                          style: GoogleFonts.inter(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFFCCFBF1),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
             ),
-          ),
+          ] else ...[
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                currencyTotals.isNotEmpty
+                    ? '${currencyTotals.keys.first.symbol}${NumberFormat('#,##,###').format(currencyTotals.values.first ~/ 100)}'
+                    : '${defaultCurrency.symbol}0',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.8,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

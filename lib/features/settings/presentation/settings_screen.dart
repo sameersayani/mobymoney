@@ -85,7 +85,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         content: Text(
-          'Are you sure you want to log out of your MobyMoney account? You can log back in anytime.',
+          'Are you sure you want to log out of your SmartExpense manager account? You can log back in anytime.',
           style: GoogleFonts.inter(
             fontSize: 14,
             color: AppColors.slate600,
@@ -437,7 +437,7 @@ class SettingsScreen extends ConsumerWidget {
 
             // App Version Info
             Text(
-              'MobyMoney v1.0.0 • AI-Powered Finance',
+              'SmartExpense manager v1.0.0 • AI-Powered Finance',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,

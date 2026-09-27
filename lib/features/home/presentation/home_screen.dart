@@ -77,7 +77,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = authState.asData?.value;
     final dashboardAsync = ref.watch(dashboardSummaryProvider);
     final selectedDate = ref.watch(selectedDateProvider);
-    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return PopScope(
       canPop: !_isAndroid,
@@ -128,29 +127,67 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               )
             : null,
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        floatingActionButton: (_currentNavIndex <= 2 && !isKeyboardOpen)
-            ? FloatingActionButton.extended(
-                onPressed: () => AddExpenseBottomSheet.show(context),
-                backgroundColor: AppColors.primary,
-                elevation: 4,
-                icon: const PhosphorIcon(
-                  PhosphorIconsRegular.plusCircle,
+        floatingActionButton: _buildAiFab(),
+        body: _buildCurrentTabBody(dashboardAsync, user, selectedDate),
+        bottomNavigationBar: _buildBottomNav(),
+      ),
+    );
+  }
+
+  Widget? _buildAiFab() {
+    // Hide FAB on AI chat screen (tab 3) or when virtual keyboard is shown
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    if (_currentNavIndex == 3 || isKeyboardOpen) return null;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F766E), Color(0xFF0D9488), Color(0xFF14B8A6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F766E).withValues(alpha: 0.38),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            AppSnackBar.dismissImmediate();
+            setState(() => _currentNavIndex = 3);
+          },
+          borderRadius: BorderRadius.circular(30),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const PhosphorIcon(
+                  PhosphorIconsFill.sparkle,
                   color: Colors.white,
-                  size: 20,
+                  size: 19,
                 ),
-                label: Text(
-                  'Add Expense',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
+                const SizedBox(width: 8),
+                Text(
+                  'Ask AI',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                     letterSpacing: 0.2,
                   ),
                 ),
-              )
-            : null,
-        body: _buildCurrentTabBody(dashboardAsync, user, selectedDate),
-        bottomNavigationBar: _buildBottomNav(),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -212,7 +249,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final displayName = _getUserDisplayName(user?.name);
         final formattedSelectedMonth =
             DateFormat('MMM yyyy').format(selectedDate);
-        final currency = ref.watch(currencyProvider);
+        final defaultCurrency = ref.watch(currencyProvider);
+        final currency = summary.totalsByCurrency.isNotEmpty
+            ? summary.totalsByCurrency.keys.first
+            : defaultCurrency;
         final totalRupees = summary.totalSpendingMinor ~/ 100;
         final dailyAvgRupees = summary.dailyAverageMinor ~/ 100;
         final essentialRupees = summary.essentialAmountMinor ~/ 100;
@@ -411,55 +451,108 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Flexible(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  '${currency.symbol} ${NumberFormat('#,##,###').format(totalRupees)}',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -0.8,
+                        // Multi-currency Totals Display
+                        if (summary.totalsByCurrency.length > 1) ...[
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Row(
+                              children: summary.totalsByCurrency.entries.map((entry) {
+                                final curr = entry.key;
+                                final totals = entry.value;
+                                final amt = totals.totalExpenditureMinor ~/ 100;
+                                return Container(
+                                  margin: const EdgeInsets.only(right: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.18),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: Colors.white24, width: 1),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        curr.flag,
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '${curr.symbol}${NumberFormat('#,##,###').format(amt)}',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        '(${totals.expenseCount})',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFFCCFBF1),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ] else ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Flexible(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    summary.totalsByCurrency.isNotEmpty
+                                        ? '${summary.totalsByCurrency.keys.first.symbol} ${NumberFormat('#,##,###').format(summary.totalsByCurrency.values.first.totalExpenditureMinor ~/ 100)}'
+                                        : '${currency.symbol} ${NumberFormat('#,##,###').format(totalRupees)}',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: -0.8,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const PhosphorIcon(
-                                    PhosphorIconsRegular.receipt,
-                                    color: Colors.white,
-                                    size: 13,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${summary.recentExpenses.length} ${summary.recentExpenses.length == 1 ? "expense" : "expenses"}',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const PhosphorIcon(
+                                      PhosphorIconsRegular.receipt,
                                       color: Colors.white,
+                                      size: 13,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${summary.recentExpenses.length} ${summary.recentExpenses.length == 1 ? "expense" : "expenses"}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         const Divider(color: Colors.white24, height: 1),
                         const SizedBox(height: 14),
@@ -819,9 +912,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // 4. Spending Trend Chart Section
                   SpendingTrendsWidget(weeklyTrend: summary.weeklyTrend),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-                  // 5. Recent Expenses Section
+                  // 5. AI Copilot Quick Action Card
+                  _buildAiCopilotBanner(),
+
+                  const SizedBox(height: 4),
+
+                  // 6. Recent Expenses Section
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -835,23 +933,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               color: AppColors.neutralDark,
                             ),
                           ),
-                          // const SizedBox(width: 8),
-                          // Container(
-                          //   padding: const EdgeInsets.symmetric(
-                          //       horizontal: 8, vertical: 2),
-                          //   decoration: BoxDecoration(
-                          //     color: AppColors.inputFieldBg,
-                          //     borderRadius: BorderRadius.circular(10),
-                          //   ),
-                          //   child: Text(
-                          //     ' Today',
-                          //     style: GoogleFonts.inter(
-                          //       fontSize: 11,
-                          //       fontWeight: FontWeight.w600,
-                          //       color: AppColors.slate500,
-                          //     ),
-                          //   ),
-                          // ),
                         ],
                       ),
                       TextButton(
@@ -892,8 +973,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
 
                   const SizedBox(height: 14),
-
-                 
                 ],
               ),
             ),
@@ -902,65 +981,261 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
   }
 
+  Widget _buildAiCopilotBanner() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withValues(alpha: 0.08),
+            const Color(0xFF0D9488).withValues(alpha: 0.14),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.22),
+          width: 1.2,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            AppSnackBar.dismissImmediate();
+            setState(() => _currentNavIndex = 3);
+          },
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(13),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.28),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: PhosphorIcon(
+                      PhosphorIconsFill.sparkle,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'AI Financial Copilot',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.neutralDark,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'AI PROMPT',
+                              style: GoogleFonts.inter(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Ask questions or log spend instantly with AI',
+                        style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          color: AppColors.slate500,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const PhosphorIcon(
+                  PhosphorIconsRegular.caretRight,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBottomNav() {
     return Container(
       color: Colors.transparent,
       padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: MediaQuery.of(context).padding.bottom > 0 ? MediaQuery.of(context).padding.bottom : 12,
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.of(context).padding.bottom > 0
+            ? MediaQuery.of(context).padding.bottom + 4
+            : 16,
         top: 6,
       ),
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        clipBehavior: Clip.none,
+        children: [
+          // Background Bar
+          Container(
+            height: 66,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.08),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+              border: Border.all(
+                color: const Color(0xFFF1F5F9),
+                width: 1.2,
+              ),
+            ),
+            child: Row(
+              children: [
+                // Left 2 items: Home & Expenses
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildNavItem(
+                        index: 0,
+                        icon: PhosphorIconsRegular.house,
+                        activeIcon: PhosphorIconsFill.house,
+                        label: 'Home',
+                      ),
+                      _buildNavItem(
+                        index: 1,
+                        icon: PhosphorIconsRegular.receipt,
+                        activeIcon: PhosphorIconsFill.receipt,
+                        label: 'Expenses',
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Center gap for Add button
+                const SizedBox(width: 58),
+
+                // Right 2 items: Analytics & AI Hub
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildNavItem(
+                        index: 2,
+                        icon: PhosphorIconsRegular.chartPieSlice,
+                        activeIcon: PhosphorIconsFill.chartPieSlice,
+                        label: 'Analytics',
+                      ),
+                      _buildNavItem(
+                        index: 3,
+                        icon: PhosphorIconsRegular.sparkle,
+                        activeIcon: PhosphorIconsFill.sparkle,
+                        label: 'AI Hub',
+                        isAi: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Elevated Center Add Button floating above bar
+          Positioned(
+            top: -14,
+            child: _buildCenterAddButton(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCenterAddButton() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        AddExpenseBottomSheet.show(context);
+      },
       child: Container(
-        height: 72,
+        padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0F172A).withValues(alpha: 0.08),
-              blurRadius: 20,
+              color: const Color(0xFF0F766E).withValues(alpha: 0.28),
+              blurRadius: 16,
               offset: const Offset(0, 6),
             ),
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
           ],
-          border: Border.all(
-            color: const Color(0xFFF1F5F9),
-            width: 1.2,
-          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildNavItem(
-              index: 0,
-              icon: PhosphorIconsRegular.house,
-              activeIcon: PhosphorIconsFill.house,
-              label: 'Home',
+        child: Container(
+          width: 52,
+          height: 52,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF0F766E),
+                Color(0xFF0D9488),
+                Color(0xFF14B8A6),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            _buildNavItem(
-              index: 1,
-              icon: PhosphorIconsRegular.receipt,
-              activeIcon: PhosphorIconsFill.receipt,
-              label: 'Expenses',
+            shape: BoxShape.circle,
+          ),
+          child: const Center(
+            child: PhosphorIcon(
+              PhosphorIconsBold.plus,
+              color: Colors.white,
+              size: 24,
             ),
-            _buildNavItem(
-              index: 2,
-              icon: PhosphorIconsRegular.chartPieSlice,
-              activeIcon: PhosphorIconsFill.chartPieSlice,
-              label: 'Analytics',
-            ),
-            _buildNavItem(
-              index: 3,
-              icon: PhosphorIconsRegular.sparkle,
-              activeIcon: PhosphorIconsFill.sparkle,
-              label: 'AI Hub',
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -971,60 +1246,82 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required IconData icon,
     required IconData activeIcon,
     required String label,
+    bool isAi = false,
   }) {
     final isSelected = _currentNavIndex == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          if (_currentNavIndex != index) {
-            AppSnackBar.dismissImmediate();
-            setState(() => _currentNavIndex = index);
-            if (index == 2) {
-              final date = ref.read(analyticsSelectedDateProvider);
-              ref.read(analyticsSummaryProvider.notifier).loadAnalyticsData(date: date);
-              ref.read(chartDataProvider.notifier).refresh(date: date);
-            }
+    return GestureDetector(
+      onTap: () {
+        if (_currentNavIndex != index) {
+          HapticFeedback.lightImpact();
+          AppSnackBar.dismissImmediate();
+          setState(() => _currentNavIndex = index);
+          if (index == 2) {
+            final date = ref.read(analyticsSelectedDateProvider);
+            ref.read(analyticsSummaryProvider.notifier).loadAnalyticsData(date: date);
+            ref.read(chartDataProvider.notifier).refresh(date: date);
           }
-        },
-        behavior: HitTestBehavior.opaque,
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeInOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withValues(alpha: 0.08) : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
+        }
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.09)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
               children: [
                 AnimatedScale(
-                  scale: isSelected ? 1.12 : 1.0,
+                  scale: isSelected ? 1.15 : 1.0,
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOutBack,
                   child: PhosphorIcon(
                     isSelected ? activeIcon : icon,
                     size: 22,
-                    color: isSelected ? AppColors.primary : AppColors.slate400,
+                    color: isSelected
+                        ? AppColors.primary
+                        : (isAi ? const Color(0xFF0D9488) : AppColors.slate400),
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? AppColors.primary : AppColors.slate500,
-                    letterSpacing: -0.2,
+                if (isAi && !isSelected)
+                  Positioned(
+                    top: -2,
+                    right: -3,
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF14B8A6),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                   ),
-                ),
               ],
             ),
-          ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              maxLines: 1,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10.5,
+                fontWeight: isSelected
+                    ? FontWeight.w800
+                    : (isAi ? FontWeight.w600 : FontWeight.w500),
+                color: isSelected
+                    ? AppColors.primary
+                    : (isAi ? const Color(0xFF0D9488) : AppColors.slate500),
+                letterSpacing: -0.2,
+              ),
+            ),
+          ],
         ),
       ),
     );

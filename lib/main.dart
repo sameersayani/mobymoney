@@ -83,7 +83,7 @@ class MobyMoneyApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
-      title: 'MobyMoney',
+      title: 'SmartExpense manager',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: router,

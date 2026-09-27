@@ -10,8 +10,6 @@ import 'package:mobymoney/features/dashboard/presentation/providers/dashboard_pr
 import 'package:mobymoney/features/dashboard/presentation/widgets/add_expense_bottom_sheet.dart';
 import 'package:mobymoney/features/expenses/presentation/providers/expense_types_provider.dart';
 
-import 'package:mobymoney/features/settings/presentation/providers/currency_provider.dart';
-
 class ExpenseDetailScreen extends ConsumerWidget {
   const ExpenseDetailScreen({
     super.key,
@@ -294,7 +292,6 @@ class ExpenseDetailScreen extends ConsumerWidget {
         ) ??
         expense;
 
-    final currency = ref.watch(currencyProvider);
     final totalAmount = currentItem.amountMinor ~/ 100;
     final isNeeded = currentItem.tag == ExpenseTag.needed;
     final quantity = currentItem.quantity > 0 ? currentItem.quantity : 1;
@@ -396,7 +393,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      '${currency.symbol}${NumberFormat('#,##,###').format(totalAmount)}',
+                      '${currentItem.currency.symbol}${NumberFormat('#,##,###').format(totalAmount)}',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 34,
                         fontWeight: FontWeight.w800,
@@ -450,7 +447,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
                   _buildDetailRow(
                     icon: PhosphorIconsRegular.currencyInr,
                     label: 'Unit Price',
-                    value: '${currency.symbol}$unitPriceAmount',
+                    value: '${currentItem.currency.symbol}$unitPriceAmount',
                   ),
                   const Divider(color: Color(0xFFF1F5F9), height: 24, thickness: 1),
                   _buildDetailRow(
@@ -510,7 +507,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _showDeleteConfirmation(context, ref, currency.symbol),
+                    onPressed: () => _showDeleteConfirmation(context, ref, currentItem.currency.symbol),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.errorContainer.withValues(alpha: 0.8),
                       foregroundColor: AppColors.error,

@@ -1,3 +1,5 @@
+import 'package:mobymoney/core/constants/app_currency.dart';
+
 enum ExpenseCategory {
   foodDining,
   officeSupplies,
@@ -10,6 +12,47 @@ enum ExpenseCategory {
 enum ExpenseTag {
   needed,
   notNeeded,
+}
+
+class CurrencyTotals {
+  final AppCurrency currency;
+  final int totalExpenditureMinor;
+  final int essentialExpenditureMinor;
+  final int nonEssentialExpenditureMinor;
+  final int expenseCount;
+
+  const CurrencyTotals({
+    required this.currency,
+    required this.totalExpenditureMinor,
+    this.essentialExpenditureMinor = 0,
+    this.nonEssentialExpenditureMinor = 0,
+    this.expenseCount = 0,
+  });
+
+  factory CurrencyTotals.fromJson(String currencyCode, Map<String, dynamic> json, {int count = 0}) {
+    final currency = AppCurrency.fromCode(currencyCode);
+    final rawActual = json['actual'] ?? json['total'] ?? json['total_expenditure'] ?? json['amount'] ?? 0;
+    final rawEssential = json['essential'] ?? json['essential_expenditure'] ?? 0;
+    final rawNonEssential = json['non_essential'] ?? json['nonEssential'] ?? json['non_essential_expenditure'] ?? 0;
+
+    int parseToMinor(dynamic val) {
+      if (val == null) return 0;
+      if (val is num) return (val * 100).round();
+      if (val is String) {
+        final parsed = double.tryParse(val) ?? 0.0;
+        return (parsed * 100).round();
+      }
+      return 0;
+    }
+
+    return CurrencyTotals(
+      currency: currency,
+      totalExpenditureMinor: parseToMinor(rawActual),
+      essentialExpenditureMinor: parseToMinor(rawEssential),
+      nonEssentialExpenditureMinor: parseToMinor(rawNonEssential),
+      expenseCount: count,
+    );
+  }
 }
 
 class DashboardSummaryModel {
@@ -27,6 +70,7 @@ class DashboardSummaryModel {
   final List<DailySpendingModel> weeklyTrend;
   final List<RecentExpenseItemModel> recentExpenses;
   final String aiInsightText;
+  final Map<AppCurrency, CurrencyTotals> totalsByCurrency;
 
   const DashboardSummaryModel({
     required this.totalSpendingMinor,
@@ -43,6 +87,7 @@ class DashboardSummaryModel {
     required this.weeklyTrend,
     required this.recentExpenses,
     required this.aiInsightText,
+    this.totalsByCurrency = const {},
   });
 
   DashboardSummaryModel copyWith({
@@ -60,6 +105,7 @@ class DashboardSummaryModel {
     List<DailySpendingModel>? weeklyTrend,
     List<RecentExpenseItemModel>? recentExpenses,
     String? aiInsightText,
+    Map<AppCurrency, CurrencyTotals>? totalsByCurrency,
   }) {
     return DashboardSummaryModel(
       totalSpendingMinor: totalSpendingMinor ?? this.totalSpendingMinor,
@@ -76,10 +122,11 @@ class DashboardSummaryModel {
       weeklyTrend: weeklyTrend ?? this.weeklyTrend,
       recentExpenses: recentExpenses ?? this.recentExpenses,
       aiInsightText: aiInsightText ?? this.aiInsightText,
+      totalsByCurrency: totalsByCurrency ?? this.totalsByCurrency,
     );
   }
 
-  /// Production Initial Mock Data matching the UI mockup (100% prepared to swap with dynamic backend API data)
+  /// Production Initial Mock Data matching the UI mockup
   factory DashboardSummaryModel.mock() {
     return const DashboardSummaryModel(
       totalSpendingMinor: 4825000,
@@ -111,6 +158,7 @@ class DashboardSummaryModel {
           timeFormatted: 'Today, 10:45 AM',
           amountMinor: 38000,
           tag: ExpenseTag.needed,
+          currency: AppCurrency.inr,
         ),
         RecentExpenseItemModel(
           id: '2',
@@ -120,6 +168,7 @@ class DashboardSummaryModel {
           timeFormatted: 'Yesterday',
           amountMinor: 25000,
           tag: ExpenseTag.needed,
+          currency: AppCurrency.inr,
         ),
         RecentExpenseItemModel(
           id: '3',
@@ -129,6 +178,7 @@ class DashboardSummaryModel {
           timeFormatted: '24 Oct',
           amountMinor: 64900,
           tag: ExpenseTag.notNeeded,
+          currency: AppCurrency.inr,
         ),
         RecentExpenseItemModel(
           id: '4',
@@ -138,8 +188,18 @@ class DashboardSummaryModel {
           timeFormatted: '22 Oct',
           amountMinor: 112000,
           tag: ExpenseTag.needed,
+          currency: AppCurrency.inr,
         ),
       ],
+      totalsByCurrency: {
+        AppCurrency.inr: CurrencyTotals(
+          currency: AppCurrency.inr,
+          totalExpenditureMinor: 4825000,
+          essentialExpenditureMinor: 3640000,
+          nonEssentialExpenditureMinor: 1185000,
+          expenseCount: 4,
+        ),
+      },
       aiInsightText:
           'Dining out is 18% lower than typical Fridays. You are on track to save ₹3,200 this week!',
     );
@@ -174,6 +234,7 @@ class RecentExpenseItemModel {
   final int quantity;
   final int unitPriceMinor;
   final DateTime? rawDate;
+  final AppCurrency currency;
 
   const RecentExpenseItemModel({
     required this.id,
@@ -187,6 +248,7 @@ class RecentExpenseItemModel {
     this.quantity = 1,
     this.unitPriceMinor = 0,
     this.rawDate,
+    this.currency = AppCurrency.inr,
   });
 
   RecentExpenseItemModel copyWith({
@@ -201,6 +263,7 @@ class RecentExpenseItemModel {
     int? quantity,
     int? unitPriceMinor,
     DateTime? rawDate,
+    AppCurrency? currency,
   }) {
     return RecentExpenseItemModel(
       id: id ?? this.id,
@@ -214,6 +277,7 @@ class RecentExpenseItemModel {
       quantity: quantity ?? this.quantity,
       unitPriceMinor: unitPriceMinor ?? this.unitPriceMinor,
       rawDate: rawDate ?? this.rawDate,
+      currency: currency ?? this.currency,
     );
   }
 }

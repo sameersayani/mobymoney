@@ -23,6 +23,12 @@ enum AppCurrency {
     symbol: '€',
     name: 'Euro',
     flag: '🇪🇺',
+  ),
+  aed(
+    code: 'AED',
+    symbol: 'د.إ',
+    name: 'UAE Dirham',
+    flag: '🇦🇪',
   );
 
   const AppCurrency({

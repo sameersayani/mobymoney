@@ -29,6 +29,22 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        val keystorePropertiesFile = rootProject.file("key.properties")
+        val keystoreProperties = java.util.Properties()
+        if (keystorePropertiesFile.exists()) {
+            keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+        }
+
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = keystoreProperties["keyPassword"] as String?
+            val storeFilePath = keystoreProperties["storeFile"] as String?
+            storeFile = if (storeFilePath != null) file(storeFilePath) else null
+            storePassword = keystoreProperties["storePassword"] as String?
+        }
+    }
+
     buildTypes {
         release {
             // R8 Code Shrinking & Obfuscation
@@ -39,9 +55,7 @@ android {
                 "proguard-rules.pro"
             )
 
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

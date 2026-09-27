@@ -1,7 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 abstract class AppConstants {
-  static const String appName = 'MobyMoney';
+  static const String appName = 'SmartExpense manager';
 
   // API Config (prioritizes compile-time --dart-define, then .env, then fallback)
   static String get apiBaseUrl {

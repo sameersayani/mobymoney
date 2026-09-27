@@ -42,13 +42,6 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
     );
   }
 
-  void _confirmDelete(ExpenseTypeModel item) {
-    showDialog(
-      context: context,
-      builder: (ctx) => _DeleteExpenseTypeDialog(item: item),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final expenseTypesAsync = ref.watch(expenseTypesProvider);
@@ -269,17 +262,6 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
               color: AppColors.slate600,
             ),
             tooltip: 'Edit Type',
-          ),
-
-          // Delete Button (DELETE /expensetype/{id})
-          IconButton(
-            onPressed: () => _confirmDelete(item),
-            icon: const PhosphorIcon(
-              PhosphorIconsRegular.trash,
-              size: 20,
-              color: AppColors.error,
-            ),
-            tooltip: 'Delete Type',
           ),
         ],
       ),
@@ -614,100 +596,3 @@ class _AddEditExpenseTypeDialogState
   }
 }
 
-/// Dedicated Delete Confirmation Dialog
-class _DeleteExpenseTypeDialog extends ConsumerStatefulWidget {
-  final ExpenseTypeModel item;
-
-  const _DeleteExpenseTypeDialog({required this.item});
-
-  @override
-  ConsumerState<_DeleteExpenseTypeDialog> createState() =>
-      _DeleteExpenseTypeDialogState();
-}
-
-class _DeleteExpenseTypeDialogState
-    extends ConsumerState<_DeleteExpenseTypeDialog> {
-  bool _isDeleting = false;
-
-  Future<void> _delete() async {
-    setState(() => _isDeleting = true);
-    try {
-      // Calls DELETE /expensetype/{id}
-      await ref
-          .read(expenseTypesProvider.notifier)
-          .deleteType(widget.item.id);
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      AppSnackBar.showSuccess(
-        context,
-        'Expense type "${widget.item.name}" deleted',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isDeleting = false);
-      AppSnackBar.showError(context, e.toString());
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      title: Text(
-        'Delete Expense Type',
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: AppColors.neutralDark,
-        ),
-      ),
-      content: Text(
-        'Are you sure you want to delete "${widget.item.name}"? This category will be removed.',
-        style: GoogleFonts.inter(
-          fontSize: 14,
-          color: AppColors.slate600,
-          height: 1.4,
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isDeleting ? null : () => Navigator.of(context).pop(),
-          child: Text(
-            'Cancel',
-            style: GoogleFonts.inter(
-              color: AppColors.slate500,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: _isDeleting ? null : _delete,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.error,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          child: _isDeleting
-              ? const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Text(
-                  'Delete',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                ),
-        ),
-      ],
-    );
-  }
-}

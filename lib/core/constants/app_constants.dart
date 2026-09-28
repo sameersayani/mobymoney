@@ -27,10 +27,10 @@ abstract class AppConstants {
     const definedId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
     if (definedId.isNotEmpty) return definedId;
 
-    if (dotenv.isInitialized && dotenv.env['GOOGLE_SERVER_CLIENT_ID'] != null) {
+    if (dotenv.isInitialized && dotenv.env['GOOGLE_SERVER_CLIENT_ID'] != null && dotenv.env['GOOGLE_SERVER_CLIENT_ID']!.isNotEmpty) {
       return dotenv.env['GOOGLE_SERVER_CLIENT_ID']!;
     }
-    return '';
+    return '14562504972-oj35nhqai92dfkdkbrems7rrsvg50mgq.apps.googleusercontent.com';
   }
 }
 

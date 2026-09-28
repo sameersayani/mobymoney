@@ -30,7 +30,7 @@ abstract class AppConstants {
     if (dotenv.isInitialized && dotenv.env['GOOGLE_SERVER_CLIENT_ID'] != null && dotenv.env['GOOGLE_SERVER_CLIENT_ID']!.isNotEmpty) {
       return dotenv.env['GOOGLE_SERVER_CLIENT_ID']!;
     }
-    return '14562504972-oj35nhqai92dfkdkbrems7rrsvg50mgq.apps.googleusercontent.com';
+    return '14562504972-dg8h7p03cj0dkimkhpuenhvstrcctks4.apps.googleusercontent.com';
   }
 }
 

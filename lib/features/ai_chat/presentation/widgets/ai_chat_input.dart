@@ -118,7 +118,7 @@ class _AiChatInputState extends State<AiChatInput> {
                           color: AppColors.neutralDark,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Ask Moby AI or log an expense...',
+                          hintText: 'Ask Smart AI or log an expense...',
                           hintStyle: GoogleFonts.inter(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w400,

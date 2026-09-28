@@ -311,7 +311,7 @@ class AiChatBubble extends ConsumerWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              'Moby AI • $timeStr',
+              'Smart AI • $timeStr',
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,

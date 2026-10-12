@@ -6,6 +6,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobymoney/core/routing/app_router.dart';
 import 'package:mobymoney/core/theme/app_colors.dart';
 import 'package:mobymoney/core/widgets/app_snack_bar.dart';
+import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
 import 'package:mobymoney/features/authentication/presentation/widgets/custom_text_field.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -36,11 +37,70 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  void _handleRegister() {
-    AppSnackBar.showInfo(
-      context,
-      'Please sign in with Google to create and access your account.',
-    );
+  bool _isLoading = false;
+
+  void _handleRegister() async {
+    if (_isLoading) return; // Prevent duplicate taps
+    if (!_formKey.currentState!.validate()) return;
+
+    if (!_agreeToTerms) {
+      AppSnackBar.showWarning(
+        context,
+        'Please agree to the Terms of Service & Privacy Policy to proceed.',
+      );
+      return;
+    }
+
+    final username = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await ref.read(authStateProvider.notifier).register(
+            username: username,
+            email: email,
+            password: password,
+          );
+
+      if (!mounted) return;
+
+      final bool hasToken = result['hasToken'] == true;
+      final String message = result['message']?.toString() ?? 'Registration successful';
+
+      if (hasToken) {
+        // Auto-authenticated -> Navigate directly to home screen
+        AppSnackBar.showSuccess(
+          context,
+          'Welcome to Smart Expense Manager!',
+        );
+        context.go(AppRoutes.home);
+      } else {
+        // Not authenticated with token -> Redirect to login screen with feedback message
+        final displayMsg = message.isNotEmpty
+            ? '$message! Please login to proceed.'
+            : 'Registered successfully! Please login to proceed.';
+
+        if (context.canPop()) {
+          context.pop(displayMsg);
+        } else {
+          context.go(AppRoutes.login, extra: displayMsg);
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      AppSnackBar.showError(context, errorMessage);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
 
@@ -122,17 +182,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // Full Name Field
+                // Full Name / Username Field
                 CustomTextField(
                   controller: _nameController,
-                  labelText: 'FULL NAME',
-                  hintText: 'Alex Morgan',
+                  labelText: 'USERNAME / FULL NAME',
+                  hintText: 'John Doe or johndoe',
                   prefixIcon: PhosphorIconsRegular.user,
                   keyboardType: TextInputType.name,
                   textInputAction: TextInputAction.next,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your full name';
+                    final trimmed = value?.trim() ?? '';
+                    if (trimmed.isEmpty) {
+                      return 'Please enter your name or username';
+                    }
+                    if (trimmed.length < 3) {
+                      return 'Username/Name must be at least 3 characters long';
                     }
                     return null;
                   },
@@ -149,10 +213,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   textInputAction: TextInputAction.next,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email';
+                      return 'Please enter your email address';
                     }
-                    if (!value.contains('@') || !value.contains('.')) {
-                      return 'Please enter a valid email address';
+                    final emailRegex = RegExp(r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$');
+                    if (!emailRegex.hasMatch(value.trim())) {
+                      return 'Please enter a valid email address (e.g. name@domain.com)';
                     }
                     return null;
                   },
@@ -184,7 +249,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       return 'Please enter a password';
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return 'Password must be at least 6 characters long';
                     }
                     return null;
                   },
@@ -282,9 +347,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                 // Register Button
                 ElevatedButton(
-                  onPressed: _handleRegister,
+                  onPressed: _isLoading ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
+                    disabledBackgroundColor:
+                        AppColors.primary.withValues(alpha: 0.6),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -292,25 +359,35 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Create Account',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Create Account',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const PhosphorIcon(
+                              PhosphorIconsRegular.arrowRight,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      const PhosphorIcon(
-                        PhosphorIconsRegular.arrowRight,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ],
-                  ),
                 ),
 
                 const SizedBox(height: 28),

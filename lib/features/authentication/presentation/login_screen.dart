@@ -10,7 +10,8 @@ import 'package:mobymoney/features/authentication/presentation/providers/auth_pr
 import 'package:mobymoney/features/authentication/presentation/widgets/custom_text_field.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  final String? successMessage;
+  const LoginScreen({super.key, this.successMessage});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -25,17 +26,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _rememberMe = true;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.successMessage != null && widget.successMessage!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          AppSnackBar.showSuccess(context, widget.successMessage!);
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleEmailSignIn() {
-    AppSnackBar.showInfo(
-      context,
-      'Please sign in with Google to access your account.',
-    );
+  bool _isPasswordLoading = false;
+
+  void _handleEmailSignIn() async {
+    if (_isPasswordLoading) return; // Guard against duplicate taps
+    if (!_formKey.currentState!.validate()) return;
+
+    final username = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    setState(() {
+      _isPasswordLoading = true;
+    });
+
+    try {
+      await ref.read(authStateProvider.notifier).loginWithPassword(
+            username: username,
+            password: password,
+          );
+
+      if (!mounted) return;
+      _showSuccessFeedback('Welcome back!');
+      context.go(AppRoutes.home);
+    } catch (e) {
+      if (!mounted) return;
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _showErrorFeedback(errorMessage);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPasswordLoading = false;
+        });
+      }
+    }
   }
 
 
@@ -137,13 +178,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // Email Field
+                // Email / Username Field
                 CustomTextField(
                   controller: _emailController,
-                  labelText: 'EMAIL ID',
-                  hintText: 'name@company.com',
-                  prefixIcon: PhosphorIconsRegular.envelopeSimple,
-                  keyboardType: TextInputType.emailAddress,
+                  labelText: 'USERNAME OR EMAIL',
+                  hintText: 'user@example.com or username',
+                  prefixIcon: PhosphorIconsRegular.user,
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.next,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your username or email';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
 
@@ -167,6 +215,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       setState(() => _obscurePassword = !_obscurePassword);
                     },
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters long';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 14),
 
@@ -240,7 +297,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 // Sign In Primary Button
                 ElevatedButton(
-                  onPressed: isGoogleLoading
+                  onPressed: (isGoogleLoading || _isPasswordLoading)
                       ? null
                       : _handleEmailSignIn,
                   style: ElevatedButton.styleFrom(
@@ -254,25 +311,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Sign In',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                  child: _isPasswordLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Sign In',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const PhosphorIcon(
+                              PhosphorIconsRegular.arrowRight,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      const PhosphorIcon(
-                        PhosphorIconsRegular.arrowRight,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ],
-                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -371,8 +438,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () {
-                          context.push(AppRoutes.register);
+                        onTap: () async {
+                          final result = await context.push<dynamic>(AppRoutes.register);
+                          if (result is String && result.isNotEmpty && mounted) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted) {
+                                AppSnackBar.showSuccess(context, result);
+                              }
+                            });
+                          }
                         },
                         child: Text(
                           'Create account',

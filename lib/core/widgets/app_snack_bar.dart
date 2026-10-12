@@ -10,26 +10,8 @@ enum SnackBarType {
   warning,
 }
 
-/// Route observer to automatically clean up active notifications on route transitions
-class AppSnackBarRouteObserver extends NavigatorObserver {
-  @override
-  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    super.didPush(route, previousRoute);
-    AppSnackBar.dismissImmediate();
-  }
-
-  @override
-  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    super.didPop(route, previousRoute);
-    AppSnackBar.dismissImmediate();
-  }
-
-  @override
-  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
-    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
-    AppSnackBar.dismissImmediate();
-  }
-}
+/// Route observer for navigation events if needed in the future
+class AppSnackBarRouteObserver extends NavigatorObserver {}
 
 /// A centralized, production-grade floating notification system.
 /// Uses a single managed [OverlayEntry] above the UI so that:
@@ -37,7 +19,7 @@ class AppSnackBarRouteObserver extends NavigatorObserver {
 /// - The Floating Action Button (FAB) NEVER jumps or moves upward.
 /// - Rapid clicks/calls are debounced (no multiple stacking or queuing 3-5 times).
 /// - Older notifications are immediately cleared before showing a new one (no overlapping).
-/// - Automatically dismissed when navigating to new screens/pages.
+/// - Smooth entry and exit animations.
 class AppSnackBar {
   static OverlayEntry? _activeEntry;
   static String? _lastMessage;
@@ -61,11 +43,12 @@ class AppSnackBar {
     _lastMessage = message;
     _lastShowTime = now;
 
-    // 2. Resolve overlay context safely
-    final targetContext = context ?? rootNavigatorKey.currentContext;
-    if (targetContext == null) return;
-
-    final overlay = Overlay.maybeOf(targetContext, rootOverlay: true);
+    // 2. Resolve overlay safely (prefer root Navigator overlay so it displays over any screen)
+    final navState = rootNavigatorKey.currentState;
+    OverlayState? overlay = navState?.overlay;
+    if (overlay == null && context != null && context.mounted) {
+      overlay = Overlay.maybeOf(context, rootOverlay: true);
+    }
     if (overlay == null) return;
 
     // 3. Immediately dismiss and remove any existing active notification (prevents overlaps)
@@ -209,10 +192,10 @@ class _AppSnackBarOverlayState extends State<_AppSnackBarOverlay>
 
     // Calculate dynamic bottom offset:
     // If keyboard is open -> float comfortably above keyboard (bottomInset + 16)
-    // If keyboard is closed -> float cleanly above the bottom navigation bar (bottomPadding + 76)
+    // If keyboard is closed -> float cleanly (bottomPadding + 28)
     final double bottomOffset = isKeyboardOpen
         ? (bottomInset + 16.0)
-        : (bottomPadding > 0 ? bottomPadding + 76.0 : 88.0);
+        : (bottomPadding > 0 ? bottomPadding + 28.0 : 36.0);
 
     // Color configuration per SnackBarType
     Color bgColor;

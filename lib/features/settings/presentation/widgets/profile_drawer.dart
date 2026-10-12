@@ -12,6 +12,7 @@ import 'package:mobymoney/features/expenses/presentation/providers/expense_types
 import 'package:mobymoney/features/settings/presentation/providers/currency_provider.dart';
 import 'package:mobymoney/features/settings/presentation/widgets/clear_expenses_dialog.dart';
 import 'package:mobymoney/features/settings/presentation/widgets/currency_selector_dialog.dart';
+import 'package:mobymoney/features/settings/presentation/widgets/delete_account_dialog.dart';
 import 'package:mobymoney/features/settings/presentation/widgets/export_expense_dialog.dart';
 import 'package:mobymoney/features/settings/presentation/widgets/privacy_policy_dialog.dart';
 
@@ -312,12 +313,24 @@ class ProfileDrawer extends ConsumerWidget {
                   const SizedBox(height: 6),
                   _buildDrawerTile(
                     context: context,
-                    icon: PhosphorIconsRegular.signOut,
+                    icon: PhosphorIconsRegular.trash,
                     iconColor: AppColors.error,
                     iconBg: AppColors.errorContainer,
+                    title: 'Delete Account',
+                    subtitle: 'Permanently remove account & data',
+                    titleColor: AppColors.error,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      DeleteAccountDialog.show(context);
+                    },
+                  ),
+                  _buildDrawerTile(
+                    context: context,
+                    icon: PhosphorIconsRegular.signOut,
+                    iconColor: AppColors.slate700,
+                    iconBg: AppColors.inputFieldBg,
                     title: 'Logout',
                     subtitle: 'Sign out from this device',
-                    titleColor: AppColors.error,
                     showChevron: false,
                     onTap: () => _showLogoutDialog(context, ref),
                   ),

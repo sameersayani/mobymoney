@@ -68,7 +68,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) => LoginScreen(
+          successMessage: state.extra as String?,
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,

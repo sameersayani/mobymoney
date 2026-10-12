@@ -25,6 +25,18 @@ class AppConfig {
   // 2. AUTHENTICATION ENDPOINTS
   // ==========================================
   
+  /// POST - Register new account with username, email & password
+  static String get register => ApiEndpoints.register;
+
+  /// POST - User Login with username & password
+  static String get passwordLogin => ApiEndpoints.passwordLogin;
+
+  /// GET - Verify authentication session
+  static String get checkAuth => ApiEndpoints.checkAuth;
+
+  /// DELETE - Permanently delete user account
+  static String get deleteAccount => ApiEndpoints.deleteAccount;
+
   /// POST - Google Sign-In exchange endpoint
   static String get googleAuth => ApiEndpoints.googleAuth;
 

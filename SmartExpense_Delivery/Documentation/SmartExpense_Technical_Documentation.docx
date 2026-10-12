@@ -89,34 +89,34 @@
 
 <h2>1. Executive Summary & Core Capabilities</h2>
 <p>
-  <strong>Smart Expense Manager</strong> is an enterprise-grade mobile personal finance application engineered using a clean, feature-first reactive architecture. Designed for global financial tracking, it combines reactive state management, seamless Google Identity authentication, resilient zero-crash network heartbeats, and conversational AI financial advisory.
+  <strong>Smart Expense Manager</strong> is an enterprise-grade mobile personal finance application engineered using a clean, feature-first reactive architecture. Designed for global financial tracking, it combines reactive state management, dual authentication pathways (Google Identity OAuth 2.0 &amp; Email/Password with persistent session cookies), resilient zero-crash network heartbeats, and conversational AI financial advisory.
 </p>
 <ul>
-  <li><strong>Instant Google OAuth 2.0:</strong> Streamlined hardware authentication with parallel token caching and automatic 401 expiration handling.</li>
-  <li><strong>Multi-Currency System:</strong> Native support for 5 currencies (<code>INR ₹</code>, <code>USD $</code>, <code>EUR €</code>, <code>GBP £</code>, <code>AED د.إ</code>) with isolated non-converting ledger aggregations.</li>
+  <li><strong>Dual Authentication Architecture:</strong> Instant native Google OAuth 2.0 and enterprise Email/Password login with secure hardware token &amp; session cookie persistence, plus automatic 401 expiration handling.</li>
+  <li><strong>Multi-Currency System:</strong> Native support for 5 currencies (<code>INR ₹</code>, <code>USD $</code>, <code>EUR €</code>, <code>GBP £</code>, <code>AED د.إ</code>) with isolated non-converting ledger aggregations and persistent selection.</li>
   <li><strong>Interactive Analytics:</strong> Real-time visualizations including Categorical Donut distribution, 7-Day Spending Bar charts, and Trend Velocity lines.</li>
   <li><strong>AI Financial Advisory:</strong> Natural language chat interface with actionable inline expense detection, automatic necessity classification, and confirmation dialogs.</li>
-  <li><strong>Export Capabilities:</strong> Filtered multi-currency CSV & Excel data export with instant native OS sharing.</li>
+  <li><strong>Export Capabilities:</strong> Filtered multi-currency CSV &amp; Excel data export with instant native OS sharing.</li>
 </ul>
 
 <h2>2. High-Level System Architecture</h2>
 <p>The end-to-end data pipeline follows a strict unidirectional reactive architecture:</p>
-<p><code>User Interaction ➔ Presentation (Flutter) ➔ State (Riverpod AsyncValue) ➔ Domain Repositories ➔ Dio Interceptors ➔ Cloud Backend & AI Engine</code></p>
+<p><code>User Interaction ➔ Presentation (Flutter) ➔ State (Riverpod AsyncValue) ➔ Domain Repositories ➔ Dio Interceptors ➔ Cloud Backend &amp; AI Engine</code></p>
 
-<h2>3. Complete Application Screen Catalog (12 Complete Screens & Modals)</h2>
+<h2>3. Complete Application Screen Catalog (12 Complete Screens &amp; Modals)</h2>
 <table>
   <thead>
     <tr>
       <th style="width: 22%;">Screen</th>
       <th style="width: 18%;">Route / Type</th>
-      <th>Key Features & Technical Details</th>
+      <th>Key Features &amp; Technical Details</th>
     </tr>
   </thead>
   <tbody>
-    <tr><td><b>Splash Screen</b></td><td><code>/splash</code></td><td>Mint circular wave branding, 2.4s animated progress, auto-auth check & secure storage routing.</td></tr>
+    <tr><td><b>Splash Screen</b></td><td><code>/splash</code></td><td>Mint circular wave branding, 2.4s animated progress, auto-auth check &amp; secure storage routing.</td></tr>
     <tr><td><b>Onboarding Screen</b></td><td><code>/onboarding</code></td><td>3-step interactive intro highlighting AI Expense Logging, Smart Categorization, and Multi-Currency Budgeting.</td></tr>
-    <tr><td><b>Login Screen</b></td><td><code>/login</code></td><td>Google Identity OAuth 2.0 authentication pipeline, custom brand typography, animated entry.</td></tr>
-    <tr><td><b>Register Screen</b></td><td><code>/register</code></td><td>Account creation entry point seamlessly routed to Google Identity Services with terms acceptance.</td></tr>
+    <tr><td><b>Login Screen</b></td><td><code>/login</code></td><td>Dual authentication with Google Identity OAuth 2.0 &amp; Email/Password, custom brand typography, animated entry.</td></tr>
+    <tr><td><b>Register Screen</b></td><td><code>/register</code></td><td>Account creation pipeline supporting username/email/password registration and Google Identity Services with terms acceptance.</td></tr>
     <tr><td><b>Home Dashboard</b></td><td><code>/</code> (Tab 0)</td><td>Hero spending card, multi-currency totals breakdown, KPI metrics, weekly spending trend, floating action button.</td></tr>
     <tr><td><b>Expenses Screen</b></td><td><code>/expenses</code> (Tab 1)</td><td>Tabbed monthly expense ledger with interactive month-year selector and category-colored indicators.</td></tr>
     <tr><td><b>All Expenses Screen</b></td><td><code>/all-expenses</code></td><td>Comprehensive transaction search with real-time text query, Tag filters, Category filter, and sorting.</td></tr>
@@ -125,7 +125,7 @@
     <tr><td><b>AI Hub / Chat</b></td><td><code>/ai-chat</code> (Tab 3)</td><td>Conversational financial AI with real-time streaming, smart prompt chips, inline expense parsing, and one-tap save/dismiss.</td></tr>
     <tr><td><b>Settings Screen</b></td><td><code>/settings</code></td><td>Profile management, active currency selector dialog (5 currencies), CSV/XLSX export, and cache management.</td></tr>
     <tr><td><b>Expense Types</b></td><td><code>/settings/expense-types</code></td><td>Custom category management with dynamic color palettes and Phosphor icons.</td></tr>
-    <tr><td><b>Add Expense Dialog</b></td><td>Modal Sheet</td><td>Creation and editing sheet with 5-currency selector, automatic unit price calculation, and date picker.</td></tr>
+    <tr><td><b>Add Expense Dialog</b></td><td>Modal Sheet</td><td>Creation and editing sheet with 5-currency selector (auto-persisting last selected currency), automatic unit price calculation, and date picker.</td></tr>
     <tr><td><b>Offline Overlay</b></td><td>System Overlay</td><td>Non-blocking network guard powered by pure Dart DNS socket heartbeats to ensure zero app crashes.</td></tr>
   </tbody>
 </table>
@@ -139,35 +139,43 @@
   <li><strong>CSV / XLSX Export:</strong> Exported financial sheets provide dedicated currency columns and per-currency summary totals.</li>
 </ul>
 
-<h2>5. Layer Breakdown & Implementation Patterns</h2>
+<h2>5. Layer Breakdown &amp; Implementation Patterns</h2>
 <ul>
   <li><strong>Feature-First Architecture:</strong> Codebase structured under <code>lib/features/{feature}/{data,domain,presentation}</code> ensuring high cohesion and loose coupling.</li>
   <li><strong>Reactive State (Riverpod):</strong> <code>AsyncValue&lt;T&gt;</code> encapsulates <code>loading</code>, <code>data</code>, and <code>error</code> states with automatic dependency invalidation on CRUD mutations.</li>
-  <li><strong>Hardware Secure Storage:</strong> AES-256 Android Keystore and iOS Keychain encrypt all JWT tokens at rest, eliminating token leakage.</li>
+  <li><strong>Hardware Secure Storage &amp; Cookie Session Persistence:</strong> AES-256 Android Keystore and iOS Keychain encrypt all JWT tokens, session cookies, and user profiles at rest, persisting authentication state across cold restarts.</li>
   <li><strong>Zero-Crash Offline Guard:</strong> Dual DNS socket ping (<code>InternetAddress.lookup</code>) to Google and Cloudflare DNS without buggy native platform channels.</li>
-  <li><strong>60s Dio Network Engine:</strong> Queued retry interceptors safeguard against cloud server cold-starts with automatic Bearer token injection.</li>
+  <li><strong>60s Dio Network Engine:</strong> Queued retry interceptors safeguard against cloud server cold-starts with automatic Bearer token injection and session Cookie preservation.</li>
 </ul>
 
-<h2>6. REST API Contracts & Endpoint Specifications</h2>
+<h2>6. REST API Contracts &amp; Endpoint Specifications</h2>
 <table>
   <thead>
     <tr>
       <th style="width: 12%;">Method</th>
       <th style="width: 32%;">Endpoint</th>
-      <th>Function & Payload Summary</th>
+      <th>Function &amp; Payload Summary</th>
     </tr>
   </thead>
   <tbody>
-    <tr><td>POST</td><td><code>/api/mobile/auth/google</code></td><td>Exchanges Google ID Token for JWT bearer access token & user profile.</td></tr>
+    <tr><td>POST</td><td><code>/api/mobile/auth/google</code></td><td>Exchanges Google ID Token for JWT bearer access token &amp; user profile.</td></tr>
+    <tr><td>POST</td><td><code>/api/auth/login</code></td><td>Authenticates with username/email and password, issuing persistent session cookie &amp; user profile.</td></tr>
+    <tr><td>POST</td><td><code>/api/auth/register</code></td><td>Registers new user account with username, email, and password.</td></tr>
     <tr><td>GET</td><td><code>/api/mobile/auth/me</code></td><td>Validates existing session and fetches latest user profile data.</td></tr>
+    <tr><td>GET</td><td><code>/auth</code></td><td>Verifies active session authentication status.</td></tr>
+    <tr><td>POST</td><td><code>/api/auth/logout</code></td><td>Terminates active session on the backend server.</td></tr>
+    <tr><td>DELETE</td><td><code>/api/auth/delete-account</code></td><td>Permanently deletes user account with password confirmation.</td></tr>
     <tr><td>GET</td><td><code>/dailyexpense</code></td><td>Fetches monthly expense records, category aggregations, and per-currency totals.</td></tr>
     <tr><td>POST</td><td><code>/dailyexpense</code></td><td>Creates a new expense with title, amount, unit price, date, category ID, and currency code.</td></tr>
     <tr><td>PUT</td><td><code>/dailyexpense/{id}</code></td><td>Updates an existing expense record with modified fields.</td></tr>
     <tr><td>DELETE</td><td><code>/dailyexpense/{id}</code></td><td>Permanently removes the specified expense item from the user's ledger.</td></tr>
     <tr><td>GET</td><td><code>/expensetype</code></td><td>Retrieves available expense categories with assigned metadata, icons, and colors.</td></tr>
     <tr><td>GET</td><td><code>/chart-data</code></td><td>Provides multi-series time-series and categorical aggregates for analytics charts.</td></tr>
+    <tr><td>GET</td><td><code>/download-report</code></td><td>Generates and exports downloadable financial report.</td></tr>
+    <tr><td>POST</td><td><code>/delete-expenses</code></td><td>Bulk deletes expenses for the authenticated user.</td></tr>
     <tr><td>POST</td><td><code>/api/ai/chat</code></td><td>Streams conversational messages to the AI engine with conversational memory.</td></tr>
     <tr><td>POST</td><td><code>/api/ai/confirm-classification</code></td><td>Applies AI-detected expense proposal directly into the user's expense ledger.</td></tr>
+    <tr><td>POST</td><td><code>/api/ai/confirm-delete</code></td><td>Confirms AI-requested expense deletion.</td></tr>
   </tbody>
 </table>
 
@@ -181,7 +189,7 @@
 
 <h2>8. Build, Signing & Deployment Verification</h2>
 <ul>
-  <li><strong>Target SDKs:</strong> Android <code>minSdk: 23</code>, <code>targetSdk: 35</code>, <code>compileSdk: 36</code> | iOS <code>14.0+</code></li>
+  <li><strong>Target SDKs:</strong> Android <code>minSdk: 24</code>, <code>targetSdk: 36</code>, <code>compileSdk: 36</code> | iOS <code>14.0+</code></li>
   <li><strong>Build Commands:</strong><br/>
     <code>flutter build appbundle --release</code> (Android Google Play Release)<br/>
     <code>flutter build ipa --release</code> (Apple App Store Release)

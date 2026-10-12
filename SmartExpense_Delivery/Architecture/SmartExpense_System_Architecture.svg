@@ -47,7 +47,7 @@
   </g>
 
   <!-- Title & Header -->
-  <text x="800" y="55" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#F8FAFC" text-anchor="middle" letter-spacing="1">MOBYMONEY — HIGH-LEVEL SYSTEM ARCHITECTURE</text>
+  <text x="800" y="55" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#F8FAFC" text-anchor="middle" letter-spacing="1">SMART EXPENSE MANAGER — HIGH-LEVEL SYSTEM ARCHITECTURE</text>
   <text x="800" y="85" font-family="Arial, sans-serif" font-size="14" fill="#94A3B8" text-anchor="middle">End-to-End Reactive Data Flow: User ➔ Presentation (Flutter) ➔ State (Riverpod) ➔ Data/Repository ➔ Network (Dio) ➔ Backend &amp; Cloud</text>
 
   <!-- LAYER 1: CLIENT PRESENTATION / UI LAYER -->
@@ -62,8 +62,8 @@
     <rect x="75" y="175" width="250" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
     <text x="90" y="200" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#38BDF8">Authentication &amp; Splash</text>
     <text x="90" y="222" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• SplashScreen (Auto-Routing)</text>
-    <text x="90" y="242" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• LoginScreen (Google Sign-In)</text>
-    <text x="90" y="262" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• RegisterScreen (Google Sign-In Only)</text>
+    <text x="90" y="242" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• LoginScreen (Google &amp; Email/Password)</text>
+    <text x="90" y="262" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• RegisterScreen (Email/Password Auth)</text>
     <text x="90" y="282" font-family="Arial, sans-serif" font-size="11" fill="#34D399">Instant Reactive AuthGuard</text>
 
     <!-- Card 2: Home & Dashboard -->
@@ -170,7 +170,7 @@
     <!-- Data Card 1: Repositories -->
     <rect x="75" y="675" width="440" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
     <text x="90" y="700" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#C084FC">Domain Repositories</text>
-    <text x="90" y="722" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• AuthRepository (Google OAuth, Token Storage, Me)</text>
+    <text x="90" y="722" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• AuthRepository (Google OAuth, Email/Password, Cookies)</text>
     <text x="90" y="742" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• DailyExpenseRepository (CRUD, Search, Filtering)</text>
     <text x="90" y="762" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• ExpenseTypeRepository &amp; AiRepository</text>
     <text x="90" y="782" font-family="Arial, sans-serif" font-size="11" fill="#34D399">Clean Separation of Concerns</text>
@@ -179,7 +179,7 @@
     <rect x="535" y="675" width="470" height="125" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
     <text x="550" y="700" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#C084FC">ApiClient (Dio Engine)</text>
     <text x="550" y="722" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• BaseUrl: https://expensemanager-0ac3.onrender.com</text>
-    <text x="550" y="742" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• AuthInterceptor (Bearer Token Injection &amp; 401 Auto-Clear)</text>
+    <text x="550" y="742" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• AuthInterceptor (Bearer Token &amp; Cookie Injection, 401 Auto-Clear)</text>
     <text x="550" y="762" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• _RetryInterceptor (Auto-retries on Render Cold-Starts)</text>
     <text x="550" y="782" font-family="Arial, sans-serif" font-size="11" fill="#38BDF8">60s Timeout Safeguards</text>
 
@@ -214,8 +214,8 @@
 
     <!-- Ext Card 2: Render API Server -->
     <rect x="415" y="920" width="410" height="120" rx="10" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
-    <text x="430" y="945" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#FB923C">MobyMoney REST API Server</text>
-    <text x="430" y="967" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• /api/mobile/auth/google &amp; /auth/me</text>
+    <text x="430" y="945" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#FB923C">Smart Expense REST API Server</text>
+    <text x="430" y="967" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• /api/mobile/auth/google &amp; /api/auth/login</text>
     <text x="430" y="987" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• /dailyexpense &amp; /expensetype</text>
     <text x="430" y="1007" font-family="Arial, sans-serif" font-size="12" fill="#94A3B8">• /chart-data, /download-report, /delete-expenses</text>
     <text x="430" y="1027" font-family="Arial, sans-serif" font-size="11" fill="#60A5FA">Render Cloud Managed Node/Python Backend</text>

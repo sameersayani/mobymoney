@@ -26,7 +26,7 @@ android {
 
     defaultConfig {
         applicationId = "com.mobymoney.mobymoney"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName

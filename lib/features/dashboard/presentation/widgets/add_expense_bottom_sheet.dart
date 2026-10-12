@@ -77,7 +77,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
       _nameController = TextEditingController(text: '');
       _unitPriceController = TextEditingController(text: '');
       _amountController = TextEditingController(text: '');
-      _selectedCurrency = ref.read(currencyProvider);
+      _selectedCurrency = ref.read(lastExpenseCurrencyProvider);
     }
   }
 
@@ -124,7 +124,7 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
     setState(() {
       _selectedExpenseTypeId = null;
       _selectedDate = DateTime.now();
-      _selectedCurrency = ref.read(currencyProvider);
+      _selectedCurrency = ref.read(lastExpenseCurrencyProvider);
       _nameController.text = '';
       _unitPriceController.text = '';
       _amountController.text = '';
@@ -282,6 +282,10 @@ class _AddExpenseDialogState extends ConsumerState<AddExpenseDialog> {
               reallyNeeded: _isReallyNeeded,
               currency: _selectedCurrency,
             );
+        // Persist the currency used so subsequent expense additions remember it
+        await ref
+            .read(lastExpenseCurrencyProvider.notifier)
+            .setCurrency(_selectedCurrency);
         if (mounted) {
           AppSnackBar.showSuccess(context, 'Expense added successfully!');
           Navigator.of(context).pop();

@@ -229,10 +229,15 @@ class AuthRepository {
     }
   }
 
-  /// Check if user has active session
+  /// Check if user has active session (via JWT token or session cookie)
   Future<bool> isAuthenticated() async {
     final token = await _storageService.getAccessToken();
-    return token != null && token.isNotEmpty;
+    if (token != null && token.isNotEmpty) {
+      return true;
+    }
+    final cookie = await _storageService.getCookie();
+    final user = await _storageService.getUserData();
+    return cookie != null && cookie.isNotEmpty && user != null;
   }
 
   /// Logout

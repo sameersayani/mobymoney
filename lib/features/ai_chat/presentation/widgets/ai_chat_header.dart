@@ -82,7 +82,7 @@ class AiChatHeader extends StatelessWidget implements PreferredSizeWidget {
                     Row(
                       children: [
                         Text(
-                          'Moby AI',
+                          'Smart AI',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 16.5,
                             fontWeight: FontWeight.w800,

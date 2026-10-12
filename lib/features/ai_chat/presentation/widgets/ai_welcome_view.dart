@@ -185,7 +185,7 @@ class _AiWelcomeViewState extends State<AiWelcomeView>
         const SizedBox(height: 22),
 
         Text(
-          'Meet Moby Copilot',
+          'Meet Smart AI',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 24,
             fontWeight: FontWeight.w800,

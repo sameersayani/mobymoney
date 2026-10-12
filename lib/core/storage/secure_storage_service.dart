@@ -44,9 +44,31 @@ class SecureStorageService {
     }
   }
 
+  /// Check if user has completed onboarding
+  Future<bool> isOnboardingCompleted() async {
+    final val = await _storage.read(key: 'onboarding_completed');
+    return val == 'true';
+  }
+
+  /// Mark onboarding as completed
+  Future<void> setOnboardingCompleted() async {
+    await _storage.write(key: 'onboarding_completed', value: 'true');
+  }
+
+  /// Save Session Cookie securely
+  Future<void> saveCookie(String cookie) async {
+    await _storage.write(key: 'session_cookie', value: cookie);
+  }
+
+  /// Retrieve Session Cookie
+  Future<String?> getCookie() async {
+    return await _storage.read(key: 'session_cookie');
+  }
+
   /// Clear all stored credentials on logout / 401
   Future<void> clearAll() async {
     await _storage.delete(key: AppConstants.keyAccessToken);
     await _storage.delete(key: AppConstants.keyUserData);
+    await _storage.delete(key: 'session_cookie');
   }
 }

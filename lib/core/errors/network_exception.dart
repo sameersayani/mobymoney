@@ -26,21 +26,38 @@ class NetworkException implements Exception {
         if (data is Map<String, dynamic>) {
           if (data['detail'] is String) {
             errorMessage = data['detail'];
+          } else if (data['detail'] is List && (data['detail'] as List).isNotEmpty) {
+            final firstError = (data['detail'] as List).first;
+            if (firstError is Map<String, dynamic> && firstError['msg'] is String) {
+              errorMessage = firstError['msg'] as String;
+            } else {
+              errorMessage = 'Validation error. Please check your inputs.';
+            }
           } else if (data['message'] is String) {
             errorMessage = data['message'];
           } else if (data['error'] is String) {
             errorMessage = data['error'];
           }
+        } else if (data is String && data.isNotEmpty) {
+          errorMessage = data;
         }
 
         if (statusCode == 401) {
-          errorMessage = 'Authentication failed. Please sign in again.';
+          if (errorMessage == 'A server error occurred. Please try again.') {
+            errorMessage = 'Invalid username or password. Please try again.';
+          }
         } else if (statusCode == 403) {
-          errorMessage = 'Access denied. You do not have permission.';
+          if (errorMessage == 'A server error occurred. Please try again.') {
+            errorMessage = 'Access denied. You do not have permission.';
+          }
         } else if (statusCode == 404) {
-          errorMessage = 'Requested resource not found.';
+          if (errorMessage == 'A server error occurred. Please try again.') {
+            errorMessage = 'Requested resource not found.';
+          }
         } else if (statusCode == 500 || statusCode == 502 || statusCode == 503) {
-          errorMessage = 'Server error. Our engineers are working on it.';
+          if (errorMessage == 'A server error occurred. Please try again.') {
+            errorMessage = 'Server error. Our engineers are working on it.';
+          }
         }
 
         return NetworkException(

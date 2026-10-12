@@ -1,7 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 abstract class AppConstants {
-  static const String appName = 'MobyMoney';
+  static const String appName = 'SmartExpense manager';
 
   // API Config (prioritizes compile-time --dart-define, then .env, then fallback)
   static String get apiBaseUrl {
@@ -27,10 +27,10 @@ abstract class AppConstants {
     const definedId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
     if (definedId.isNotEmpty) return definedId;
 
-    if (dotenv.isInitialized && dotenv.env['GOOGLE_SERVER_CLIENT_ID'] != null) {
+    if (dotenv.isInitialized && dotenv.env['GOOGLE_SERVER_CLIENT_ID'] != null && dotenv.env['GOOGLE_SERVER_CLIENT_ID']!.isNotEmpty) {
       return dotenv.env['GOOGLE_SERVER_CLIENT_ID']!;
     }
-    return '';
+    return '14562504972-dg8h7p03cj0dkimkhpuenhvstrcctks4.apps.googleusercontent.com';
   }
 }
 

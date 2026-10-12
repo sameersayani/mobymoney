@@ -26,35 +26,40 @@ class ExpenseExportService {
     buffer.writeln(''); // Empty line
 
     // Column Headers
-    buffer.writeln('ID,Date / Time,Expense Title,Category,Priority Tag,Amount (${currency.code})');
+    buffer.writeln('ID,Date / Time,Expense Title,Category,Currency,Priority Tag,Amount');
 
-    int totalMinor = 0;
-    int neededMinor = 0;
-    int discretionaryMinor = 0;
+    final Map<AppCurrency, int> currencyTotals = {};
+    final Map<AppCurrency, int> currencyNeeded = {};
+    final Map<AppCurrency, int> currencyDiscretionary = {};
 
     for (final item in expenses) {
-      final rupees = item.amountMinor / 100.0;
-      totalMinor += item.amountMinor;
+      final amt = item.amountMinor / 100.0;
+      currencyTotals[item.currency] = (currencyTotals[item.currency] ?? 0) + item.amountMinor;
 
       if (item.tag == ExpenseTag.needed) {
-        neededMinor += item.amountMinor;
+        currencyNeeded[item.currency] = (currencyNeeded[item.currency] ?? 0) + item.amountMinor;
       } else {
-        discretionaryMinor += item.amountMinor;
+        currencyDiscretionary[item.currency] = (currencyDiscretionary[item.currency] ?? 0) + item.amountMinor;
       }
 
       final cleanTitle = '"${item.title.replaceAll('"', '""')}"';
       final cleanCategory = '"${item.categoryName.replaceAll('"', '""')}"';
       final tagStr = item.tag == ExpenseTag.needed ? 'Essential' : 'Discretionary';
 
-      buffer.writeln('${item.id},"${item.timeFormatted}",$cleanTitle,$cleanCategory,$tagStr,${rupees.toStringAsFixed(2)}');
+      buffer.writeln('${item.id},"${item.timeFormatted}",$cleanTitle,$cleanCategory,${item.currency.code},$tagStr,${item.currency.symbol}${amt.toStringAsFixed(2)}');
     }
 
     buffer.writeln('');
-    buffer.writeln('SUMMARY');
+    buffer.writeln('SUMMARY (SEPARATE TOTALS BY CURRENCY)');
     buffer.writeln('Total Expenses Count,${expenses.length}');
-    buffer.writeln('Total Essential Spending (${currency.symbol}),${(neededMinor / 100.0).toStringAsFixed(2)}');
-    buffer.writeln('Total Discretionary Spending (${currency.symbol}),${(discretionaryMinor / 100.0).toStringAsFixed(2)}');
-    buffer.writeln('Grand Total Spending (${currency.symbol}),${(totalMinor / 100.0).toStringAsFixed(2)}');
+    for (final curr in currencyTotals.keys) {
+      final total = (currencyTotals[curr] ?? 0) / 100.0;
+      final essential = (currencyNeeded[curr] ?? 0) / 100.0;
+      final discretionary = (currencyDiscretionary[curr] ?? 0) / 100.0;
+      buffer.writeln('${curr.code} Total Spending (${curr.symbol}),${total.toStringAsFixed(2)}');
+      buffer.writeln('${curr.code} Essential Spending (${curr.symbol}),${essential.toStringAsFixed(2)}');
+      buffer.writeln('${curr.code} Discretionary Spending (${curr.symbol}),${discretionary.toStringAsFixed(2)}');
+    }
 
     return buffer.toString();
   }

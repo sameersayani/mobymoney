@@ -124,7 +124,7 @@ class _AiTypingIndicatorState extends State<AiTypingIndicator>
                         ).createShader(bounds);
                       },
                       child: Text(
-                        'Moby AI is thinking',
+                        'Smart AI is thinking',
                         style: GoogleFonts.inter(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,

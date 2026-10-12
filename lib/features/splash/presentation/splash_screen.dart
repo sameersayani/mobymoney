@@ -2,9 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mobymoney/core/routing/app_router.dart';
-import 'package:mobymoney/core/theme/app_colors.dart';
+import 'package:mobymoney/core/storage/secure_storage_service.dart';
 import 'package:mobymoney/features/authentication/presentation/providers/auth_provider.dart';
 import 'package:mobymoney/shared/widgets/brand_logo_title.dart';
 
@@ -39,7 +38,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (isLoggedIn) {
         context.go(AppRoutes.home);
       } else {
-        context.go(AppRoutes.login);
+        final hasOnboarded =
+            await SecureStorageService.instance.isOnboardingCompleted();
+        if (!mounted) return;
+
+        if (hasOnboarded) {
+          context.go(AppRoutes.login);
+        } else {
+          context.go(AppRoutes.onboarding);
+        }
       }
     });
   }
@@ -54,135 +61,137 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF0FDF9), // Subtle minty tint at top
-              Colors.white,
-              Color(0xFFF8FAFC),
-            ],
-            stops: [0.0, 0.45, 1.0],
+      backgroundColor: const Color(0xFFFAFDFB), // Soft ultra-clean mint-tinted white
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 1. Organic Concentric Mint Circular Waves at Bottom-Left (Matching Reference Mockup)
+          Positioned(
+            left: -140,
+            bottom: -140,
+            child: Container(
+              width: 440,
+              height: 440,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF10B981).withValues(alpha: 0.16),
+                    const Color(0xFF6EE7B7).withValues(alpha: 0.08),
+                    const Color(0xFFFAFDFB).withValues(alpha: 0.0),
+                  ],
+                  stops: const [0.0, 0.55, 1.0],
+                ),
+              ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
+          Positioned(
+            left: -80,
+            bottom: -80,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.10),
+                  width: 32,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: -20,
+            bottom: -20,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF34D399).withValues(alpha: 0.14),
+                  width: 22,
+                ),
+              ),
+            ),
+          ),
+
+          // 2. Main Centered Content
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight,
-                  ),
-                  child: IntrinsicHeight(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        children: [
-                          const Spacer(flex: 3),
-                          // App Logo with soft shadow
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.16),
-                                  blurRadius: 28,
-                                  offset: const Offset(0, 10),
-                                  spreadRadius: 2,
-                                ),
-                              ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Elevated Rhombus Brand Logo (Direct emblem image with soft glow)
+                      Container(
+                        width: 116,
+                        height: 116,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF0F172A).withValues(alpha: 0.12),
+                              blurRadius: 36,
+                              offset: const Offset(0, 14),
+                              spreadRadius: 2,
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(24),
-                              child: Image.asset(
-                                'assets/images/app_logo.png',
-                                fit: BoxFit.cover,
-                              ),
+                            BoxShadow(
+                              color: const Color(0xFF00A86B).withValues(alpha: 0.22),
+                              blurRadius: 28,
+                              offset: const Offset(0, 8),
                             ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(30),
+                          child: Image.asset(
+                            'assets/images/smart_icon.png',
+                            fit: BoxFit.contain,
                           ),
-                          const SizedBox(height: 24),
-                          // App Name formatted with two-tone logo colors
-                          const BrandLogoTitle(
-                            fontSize: 30,
-                            spacing: 6,
-                          ),
-                          const SizedBox(height: 10),
-                          // Tagline
-                          Text(
-                            'Intelligent Expense Management',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.slate500,
-                              letterSpacing: -0.1,
-                            ),
-                          ),
-                          const Spacer(flex: 3),
-                          const SizedBox(height: 24),
-                          // Circular mini spinner
-                          SizedBox(
-                            width: 28,
-                            height: 28,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                AppColors.primary.withValues(alpha: 0.8),
-                              ),
-                              backgroundColor: AppColors.slate200,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          // Linear loading indicator
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 40),
-                            child: AnimatedBuilder(
-                              animation: _progressController,
-                              builder: (context, child) {
-                                return ClipRRect(
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: LinearProgressIndicator(
-                                    value: _progressController.value,
-                                    minHeight: 4,
-                                    backgroundColor: AppColors.slate200,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(
-                                      AppColors.primary,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Status text
-                          Text(
-                            'SECURING FINANCIAL LEDGER...',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1.2,
-                              color: AppColors.slate400,
-                            ),
-                          ),
-                          const Spacer(flex: 1),
-                          const SizedBox(height: 16),
-                        ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 36),
+
+                      // Brand Name in exact 3 stacked lines + yesitech.com subtext
+                      const BrandLogoTitle(
+                        fontSize: 34,
+                        showSubtitle: true,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                      ),
+                      const SizedBox(height: 56),
+
+                      // Minimalist sleek progress bar
+                      SizedBox(
+                        width: 140,
+                        child: AnimatedBuilder(
+                          animation: _progressController,
+                          builder: (context, child) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: _progressController.value,
+                                minHeight: 3.5,
+                                backgroundColor: const Color(0xFFE2E8F0),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Color(0xFF00A86B),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

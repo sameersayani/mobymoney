@@ -83,6 +83,7 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
     required double unitPrice,
     required double amount,
     required bool reallyNeeded,
+    AppCurrency currency = AppCurrency.inr,
   }) async {
     final repo = ref.read(dailyExpenseRepositoryProvider);
     await repo.addExpense(
@@ -93,6 +94,7 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
       unitPrice: unitPrice,
       amount: amount,
       reallyNeeded: reallyNeeded,
+      currency: currency,
     );
     await loadDashboardData(date: _currentDate);
     ref.invalidate(expensesSummaryProvider);
@@ -107,6 +109,7 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
     required double unitPrice,
     required double amount,
     required bool reallyNeeded,
+    AppCurrency currency = AppCurrency.inr,
   }) async {
     final repo = ref.read(dailyExpenseRepositoryProvider);
     await repo.updateExpense(
@@ -118,6 +121,7 @@ class DashboardNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
       unitPrice: unitPrice,
       amount: amount,
       reallyNeeded: reallyNeeded,
+      currency: currency,
     );
     await loadDashboardData(date: _currentDate);
     ref.invalidate(expensesSummaryProvider);
@@ -188,6 +192,7 @@ class ExpensesNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
     required double unitPrice,
     required double amount,
     required bool reallyNeeded,
+    AppCurrency currency = AppCurrency.inr,
   }) async {
     final repo = ref.read(dailyExpenseRepositoryProvider);
     await repo.addExpense(
@@ -198,6 +203,7 @@ class ExpensesNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
       unitPrice: unitPrice,
       amount: amount,
       reallyNeeded: reallyNeeded,
+      currency: currency,
     );
     await loadExpensesData(date: _currentDate);
     ref.invalidate(dashboardSummaryProvider);
@@ -212,6 +218,7 @@ class ExpensesNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
     required double unitPrice,
     required double amount,
     required bool reallyNeeded,
+    AppCurrency currency = AppCurrency.inr,
   }) async {
     final repo = ref.read(dailyExpenseRepositoryProvider);
     await repo.updateExpense(
@@ -223,6 +230,7 @@ class ExpensesNotifier extends Notifier<AsyncValue<DashboardSummaryModel>> {
       unitPrice: unitPrice,
       amount: amount,
       reallyNeeded: reallyNeeded,
+      currency: currency,
     );
     await loadExpensesData(date: _currentDate);
     ref.invalidate(dashboardSummaryProvider);

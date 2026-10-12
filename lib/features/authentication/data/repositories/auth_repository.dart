@@ -79,10 +79,165 @@ class AuthRepository {
     return null;
   }
 
-  /// Check if user has active session
+  /// Register new user account with username, email, and password
+  /// POST /api/auth/register
+  Future<Map<String, dynamic>> register({
+    required String username,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post(
+        ApiEndpoints.register,
+        data: {
+          'username': username.trim(),
+          'email': email.trim(),
+          'password': password,
+        },
+      );
+
+      final dynamic data = response.data;
+      String message = 'Registered successfully';
+      String token = '';
+      UserModel? user;
+
+      if (data is Map<String, dynamic>) {
+        if (data.containsKey('message') && data['message'] is String) {
+          message = data['message'] as String;
+        }
+
+        if (data.containsKey('access_token')) {
+          token = data['access_token']?.toString() ?? '';
+        } else if (data.containsKey('token')) {
+          token = data['token']?.toString() ?? '';
+        }
+
+        if (token.isNotEmpty) {
+          await _storageService.saveAccessToken(token);
+        }
+
+        if (data.containsKey('user') && data['user'] is Map<String, dynamic>) {
+          user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+          await _storageService.saveUserData(user.toJson());
+        }
+      } else if (data is String && data.isNotEmpty) {
+        message = data;
+      }
+
+      return {
+        'message': message,
+        'hasToken': token.isNotEmpty,
+        'user': user,
+      };
+    } on DioException catch (e) {
+      throw NetworkException.fromDioException(e);
+    } catch (e) {
+      throw NetworkException(message: 'Failed to register: ${e.toString()}');
+    }
+  }
+
+  /// Authenticate with username and password
+  /// POST /api/auth/login
+  Future<UserModel> loginWithPassword({
+    required String username,
+    required String password,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post(
+        ApiEndpoints.passwordLogin,
+        data: {
+          'username': username.trim(),
+          'password': password,
+        },
+      );
+
+      final dynamic data = response.data;
+      String token = '';
+      Map<String, dynamic> userMap = {};
+
+      if (data is Map<String, dynamic>) {
+        if (data.containsKey('access_token')) {
+          token = data['access_token']?.toString() ?? '';
+        } else if (data.containsKey('token')) {
+          token = data['token']?.toString() ?? '';
+        }
+
+        if (data.containsKey('user') && data['user'] is Map<String, dynamic>) {
+          userMap = data['user'] as Map<String, dynamic>;
+        } else {
+          userMap = data;
+        }
+      } else if (data is String && data.isNotEmpty && !data.startsWith('{')) {
+        token = data;
+      }
+
+      if (token.isNotEmpty) {
+        await _storageService.saveAccessToken(token);
+      }
+
+      UserModel user;
+      if (userMap.isNotEmpty && (userMap.containsKey('email') || userMap.containsKey('name'))) {
+        user = UserModel.fromJson(userMap);
+      } else {
+        user = UserModel(id: 1, email: username, name: username);
+      }
+
+      await _storageService.saveUserData(user.toJson());
+      return user;
+    } on DioException catch (e) {
+      throw NetworkException.fromDioException(e);
+    } catch (e) {
+      throw NetworkException(message: 'Login failed: ${e.toString()}');
+    }
+  }
+
+  /// Verify authenticated session with backend
+  /// GET /auth
+  Future<String> checkAuth() async {
+    try {
+      final response = await _apiClient.dio.get(ApiEndpoints.checkAuth);
+      return response.data?.toString() ?? 'Authenticated';
+    } on DioException catch (e) {
+      throw NetworkException.fromDioException(e);
+    } catch (e) {
+      throw NetworkException(message: 'Authentication check failed: ${e.toString()}');
+    }
+  }
+
+  /// Permanently delete account
+  /// DELETE /api/auth/delete-account
+  Future<String> deleteAccount({required String password}) async {
+    try {
+      final response = await _apiClient.dio.delete(
+        ApiEndpoints.deleteAccount,
+        data: {
+          'password': password,
+        },
+      );
+      final dynamic data = response.data;
+      String message = 'Account permanently deleted';
+      if (data is Map<String, dynamic> && data.containsKey('message')) {
+        message = data['message']?.toString() ?? 'Account permanently deleted';
+      } else if (data is String && data.isNotEmpty && !data.startsWith('{')) {
+        message = data;
+      }
+      return message;
+    } on DioException catch (e) {
+      throw NetworkException.fromDioException(e);
+    } catch (e) {
+      throw NetworkException(message: 'Failed to delete account: ${e.toString()}');
+    }
+  }
+
+  /// Check if user has active session (via JWT token or session cookie)
   Future<bool> isAuthenticated() async {
     final token = await _storageService.getAccessToken();
-    return token != null && token.isNotEmpty;
+    if (token != null && token.isNotEmpty) {
+      return true;
+    }
+    final cookie = await _storageService.getCookie();
+    final user = await _storageService.getUserData();
+    return cookie != null && cookie.isNotEmpty && user != null;
   }
 
   /// Logout

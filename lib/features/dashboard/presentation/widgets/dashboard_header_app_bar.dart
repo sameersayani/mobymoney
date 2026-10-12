@@ -9,7 +9,7 @@ class DashboardHeaderAppBar extends StatelessWidget implements PreferredSizeWidg
   const DashboardHeaderAppBar({
     super.key,
     required this.user,
-    this.title = 'Moby',
+    this.title = 'SmartExpense',
     this.subtitle = 'DASHBOARD',
     this.onMenuTap,
     this.onAvatarTap,

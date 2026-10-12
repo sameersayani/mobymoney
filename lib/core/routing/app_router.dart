@@ -11,6 +11,7 @@ import 'package:mobymoney/features/expenses/presentation/all_expenses_screen.dar
 import 'package:mobymoney/features/expenses/presentation/expense_detail_screen.dart';
 import 'package:mobymoney/features/expenses/presentation/expenses_screen.dart';
 import 'package:mobymoney/features/home/presentation/home_screen.dart';
+import 'package:mobymoney/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:mobymoney/features/settings/presentation/expense_types_screen.dart';
 import 'package:mobymoney/core/widgets/app_snack_bar.dart';
 import 'package:mobymoney/features/settings/presentation/settings_screen.dart';
@@ -44,6 +45,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = authState.asData?.value != null;
       final isAuthRoute = state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.register ||
+          state.matchedLocation == AppRoutes.onboarding ||
           state.matchedLocation == AppRoutes.splash;
 
       // If user is not logged in and not on an auth route, force redirect to Login
@@ -59,9 +61,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
+        path: AppRoutes.onboarding,
+        name: 'onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) => LoginScreen(
+          successMessage: state.extra as String?,
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,
@@ -155,6 +164,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
 abstract class AppRoutes {
   static const splash = '/splash';
+  static const onboarding = '/onboarding';
   static const login = '/login';
   static const register = '/register';
   static const home = '/';

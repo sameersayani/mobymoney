@@ -5,6 +5,10 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/errors/network_exception.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/networking/api_client.dart';
+import '../../../ai_chat/presentation/providers/ai_chat_provider.dart';
+import '../../../analytics/presentation/providers/analytics_provider.dart';
+import '../../../dashboard/presentation/providers/dashboard_provider.dart';
+import '../../../expenses/presentation/providers/expense_types_provider.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../domain/models/auth_response_model.dart';
 import '../../domain/models/user_model.dart';
@@ -54,6 +58,7 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
           // If /api/mobile/auth/me is down or unconfigured, cached user remains valid
         }
       } else {
+        _invalidateUserData();
         state = const AsyncValue.data(null);
       }
     } catch (e, st) {
@@ -63,6 +68,19 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
 
   AuthRepository get _authRepository => ref.read(authRepositoryProvider);
   GoogleSignIn get _googleSignIn => ref.read(googleSignInProvider);
+
+  /// Invalidate all user-specific data from previous session
+  void _invalidateUserData() {
+    ref.invalidate(homeSelectedDateProvider);
+    ref.invalidate(expensesSelectedDateProvider);
+    ref.invalidate(analyticsSelectedDateProvider);
+    ref.invalidate(dashboardSummaryProvider);
+    ref.invalidate(expensesSummaryProvider);
+    ref.invalidate(analyticsSummaryProvider);
+    ref.invalidate(chartDataProvider);
+    ref.invalidate(expenseTypesProvider);
+    ref.invalidate(aiChatProvider);
+  }
 
   /// Perform full Google Sign-In -> Backend verification pipeline
   Future<AuthResponseModel?> signInWithGoogle() async {
@@ -91,6 +109,10 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
 
       // 3. Authenticate with backend: POST /api/mobile/auth/google
       final authResponse = await _authRepository.loginWithGoogle(idToken);
+      
+      // Invalidate old session cache so the newly logged-in user starts fresh
+      _invalidateUserData();
+      
       state = AsyncValue.data(authResponse.user);
 
       // 4. Background refresh /api/mobile/auth/me asynchronously (non-blocking)
@@ -114,8 +136,99 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
     }
   }
 
+  /// Register new user account: POST /api/auth/register
+  Future<Map<String, dynamic>> register({
+    required String username,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final result = await _authRepository.register(
+        username: username,
+        email: email,
+        password: password,
+      );
+
+      final bool hasToken = result['hasToken'] == true;
+      final UserModel? user = result['user'] as UserModel?;
+
+      if (hasToken && user != null) {
+        _invalidateUserData();
+        state = AsyncValue.data(user);
+      }
+
+      return result;
+    } on NetworkException catch (e) {
+      throw NetworkException(message: e.message);
+    } catch (e) {
+      throw NetworkException(message: 'Registration failed: ${e.toString()}');
+    }
+  }
+
+  /// Sign in with username/password: POST /api/auth/login
+  Future<void> loginWithPassword({
+    required String username,
+    required String password,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final user = await _authRepository.loginWithPassword(
+        username: username,
+        password: password,
+      );
+
+      _invalidateUserData();
+      state = AsyncValue.data(user);
+
+      // Verify auth asynchronously (does not block UI if optional)
+      unawaited(
+        _authRepository.checkAuth().catchError((e) {
+          AppLogger.w('Background checkAuth returned: $e', 'AUTH');
+          return '';
+        }),
+      );
+    } on NetworkException catch (e, st) {
+      AppLogger.e('Password login failed', e, st, 'AUTH');
+      state = AsyncValue.error(e.message, st);
+      rethrow;
+    } catch (e, st) {
+      AppLogger.e('Unexpected password login failure', e, st, 'AUTH');
+      state = AsyncValue.error('Sign-in failed. Please try again.', st);
+      rethrow;
+    }
+  }
+
+  /// Check authentication status: GET /auth
+  Future<String> checkAuth() async {
+    try {
+      return await _authRepository.checkAuth();
+    } on NetworkException catch (e) {
+      throw NetworkException(message: e.message);
+    } catch (e) {
+      throw NetworkException(message: 'Auth check failed: ${e.toString()}');
+    }
+  }
+
+  /// Delete user account permanently: DELETE /api/auth/delete-account
+  Future<String> deleteAccount({required String password}) async {
+    try {
+      final message = await _authRepository.deleteAccount(password: password);
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {}
+      _invalidateUserData();
+      state = const AsyncValue.data(null);
+      return message;
+    } on NetworkException catch (e) {
+      throw NetworkException(message: e.message);
+    } catch (e) {
+      throw NetworkException(message: 'Failed to delete account: ${e.toString()}');
+    }
+  }
+
   /// Called by AuthInterceptor when a 401 Unauthorized response is received
   void notifySessionExpired() {
+    _invalidateUserData();
     state = const AsyncValue.data(null);
   }
 
@@ -124,8 +237,10 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
     try {
       await _googleSignIn.signOut();
       await _authRepository.logout();
+      _invalidateUserData();
       state = const AsyncValue.data(null);
     } catch (e, st) {
+      _invalidateUserData();
       state = AsyncValue.error('Failed to log out.', st);
     }
   }

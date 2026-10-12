@@ -1,5 +1,12 @@
+/// Central API Endpoints Definition for Smart Expense Manager
+/// 
+/// All backend route paths are declared here. You can modify any API endpoint URL in this file.
 abstract class ApiEndpoints {
   // Auth
+  static const String register = '/api/auth/register';
+  static const String passwordLogin = '/api/auth/login';
+  static const String checkAuth = '/auth';
+  static const String deleteAccount = '/api/auth/delete-account';
   static const String googleAuth = '/api/mobile/auth/google';
   static const String authMe = '/api/mobile/auth/me';
   static const String logout = '/logout';

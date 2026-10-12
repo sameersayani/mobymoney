@@ -86,7 +86,7 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
               name: fileName,
             ),
           ],
-          subject: 'MobyMoney Expense Report',
+          subject: 'SmartExpense manager Expense Report',
           sharePositionOrigin: Rect.zero,
         ),
       );
@@ -201,7 +201,7 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(_downloadedFile!.path)],
-          subject: 'MobyMoney Expense Report',
+          subject: 'SmartExpense manager Expense Report',
         ),
       );
     } catch (e) {
@@ -623,7 +623,7 @@ class _ExportExpenseDialogState extends ConsumerState<ExportExpenseDialog> {
                               ),
                               Expanded(
                                 child: Text(
-                                  'Files App > On My iPhone > MobyMoney',
+                                  'Files App > On My iPhone > SmartExpense manager',
                                   style: GoogleFonts.inter(
                                     fontSize: 11,
                                     color: AppColors.slate600,

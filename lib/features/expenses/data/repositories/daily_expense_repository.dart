@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:mobymoney/core/constants/app_currency.dart';
 import '../../../../core/errors/network_exception.dart';
 import '../../../../core/networking/api_client.dart';
 import '../../../../core/networking/api_endpoints.dart';
@@ -100,6 +101,7 @@ class DailyExpenseRepository {
     required double unitPrice,
     required double amount,
     required bool reallyNeeded,
+    AppCurrency currency = AppCurrency.inr,
   }) async {
     try {
       final payload = {
@@ -109,6 +111,7 @@ class DailyExpenseRepository {
         'unit_price': unitPrice,
         'amount': amount,
         'really_needed': reallyNeeded,
+        'currency': currency.code,
       };
 
       final response = await _apiClient.dio.post(
@@ -136,6 +139,7 @@ class DailyExpenseRepository {
     required double unitPrice,
     required double amount,
     required bool reallyNeeded,
+    AppCurrency currency = AppCurrency.inr,
   }) async {
     try {
       final payload = {
@@ -146,6 +150,7 @@ class DailyExpenseRepository {
         'amount': amount,
         'really_needed': reallyNeeded,
         'expense_type_id': expenseTypeId,
+        'currency': currency.code,
       };
 
       final response = await _apiClient.dio.put(

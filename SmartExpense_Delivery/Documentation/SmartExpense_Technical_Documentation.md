@@ -32,7 +32,7 @@ User Interaction ➔ Presentation (Flutter) ➔ State (Riverpod AsyncValue) ➔ 
 1. **Presentation Layer:** Flutter Widgets, GoRouter Navigation Guards, Responsive UI Components.
 2. **State Management Layer:** Riverpod StateNotifiers, AsyncValue lifecycle managers, Optimistic cache invalidation.
 3. **Data Layer:** Domain Repositories, Dio HTTP Client with queued retry interceptors, Hardware Keystore / Keychain storage.
-4. **Backend & Cloud Services:** Google Identity Services, Cloud REST API Server (Render), Conversational AI NLP Engine.
+4. **Backend & Cloud Services:** Google Identity Services, Cloud REST API Server (Railway), Conversational AI NLP Engine.
 
 ---
 
@@ -51,7 +51,7 @@ User Interaction ➔ Presentation (Flutter) ➔ State (Riverpod AsyncValue) ➔ 
 | **Analytics Screen** | `/analytics` (Tab 2) | Donut category split chart, 7-day spending bar chart, cumulative trend angle, and monthly comparison. |
 | **AI Hub / Chat** | `/ai-chat` (Tab 3) | Conversational financial AI with real-time streaming, smart prompt chips, inline expense parsing, and one-tap save/dismiss. |
 | **Settings Screen** | `/settings` | Profile management, active currency selector dialog (5 currencies), CSV/XLSX export, and cache management. |
-| **Expense Types** | `/settings/expense-types` | Custom category management with dynamic color palettes and Phosphor icons. |
+| **Expense Types** | `/settings/expense-types` | Custom category management with dynamic color palettes and Phosphor icons (creation & viewing; edit/update functionality removed). |
 | **Add Expense Dialog** | Modal Sheet | Creation and editing sheet with 5-currency selector (auto-persisting last selected currency), automatic unit price calculation, and date picker. |
 | **Offline Overlay** | System Overlay | Non-blocking network guard powered by pure Dart DNS socket heartbeats to ensure zero app crashes. |
 
@@ -94,6 +94,7 @@ The application features a strict, production-tested multi-currency architecture
 | **PUT** | `/dailyexpense/{id}` | Updates an existing expense record with modified fields. |
 | **DELETE** | `/dailyexpense/{id}` | Permanently removes the specified expense item from the user's ledger. |
 | **GET** | `/expensetype` | Retrieves available expense categories with assigned metadata, icons, and colors. |
+| **POST** | `/expensetype` | Creates a new expense category. *(Note: Edit/update functionality has been removed).* |
 | **GET** | `/chart-data` | Provides multi-series time-series and categorical aggregates for analytics charts. |
 | **GET** | `/download-report` | Generates and exports downloadable financial report. |
 | **POST** | `/delete-expenses` | Bulk deletes expenses for the authenticated user. |

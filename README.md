@@ -32,7 +32,7 @@ AppConfig.aiChat;            // '/api/ai/chat'
 ### 2. Environment File Setup
 Create or verify a `.env` file in the project root directory (`mobymoney/.env`):
 ```env
-API_BASE_URL=https://expensemanager-0ac3.onrender.com
+API_BASE_URL=https://expensemanager-production-a247ca18.up.railway.app
 GOOGLE_SERVER_CLIENT_ID=<your-google-web-client-id>.apps.googleusercontent.com
 ```
 
@@ -55,7 +55,7 @@ Connect a real device or launch an emulator, then execute:
 flutter run
 
 # Run with specific backend URL directly (optional)
-flutter run --dart-define=API_BASE_URL=https://expensemanager-0ac3.onrender.com
+flutter run --dart-define=API_BASE_URL=https://expensemanager-production-a247ca18.up.railway.app
 ```
 
 ### 6. Production Builds

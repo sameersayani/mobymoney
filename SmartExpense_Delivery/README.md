@@ -42,7 +42,7 @@ Every application page and modal in the production build:
 | **Analytics Screen** | `/analytics` | Multi-chart analytics (Donut Category Split, Daily Peaks Bar, Trend Line) |
 | **AI Hub / AI Chat** | `/ai-chat` | Interactive AI Financial Advisor with inline expense parsing, confirmation, and categorization |
 | **Settings Screen** | `/settings` | Profile info, Currency selector modal (5 currencies), CSV/XLSX export |
-| **Expense Types Screen**| `/settings/expense-types`| Category management list with custom colors and icons |
+| **Expense Types Screen**| `/settings/expense-types`| Category management list with custom colors and icons (create and view; edit/update disabled) |
 | **Add Expense Dialog** | Modal | Bottom sheet / dialog for creating and editing expenses with persistent 5-currency selector |
 | **Offline Screen** | Full-Screen Overlay | Automatic overlay during internet disconnection with pure Dart DNS heartbeat |
 
@@ -82,7 +82,7 @@ The documentation files cover:
 ### 2. Environment Setup
 Ensure a `.env` file exists in the project root:
 ```env
-API_BASE_URL=https://expensemanager-0ac3.onrender.com
+API_BASE_URL=https://expensemanager-production-a247ca18.up.railway.app
 GOOGLE_SERVER_CLIENT_ID=<your-web-client-id>.apps.googleusercontent.com
 ```
 
@@ -120,5 +120,6 @@ flutter build ipa --release
 | v1.0.0 | Sep 2026 | Initial release |
 | v1.0.1 | Sep 2026 | Android targetSdk pinned to 35, FileProvider added, ProGuard expanded, DNS fallback fixed, iOS Info.plist bundle name corrected, Google Fonts offline mode enabled |
 | v1.1.0 | Sep 2026 | Rebranded to Smart Expense Manager, added Onboarding flow, full multi-currency system (INR, USD, EUR, GBP, AED), floating bottom nav dock, centralized AppConfig endpoint file, AI bubble overflow fixes |
+| v1.1.1 | Nov 2026 | Updated API Base URL to Railway production host (`https://expensemanager-production-a247ca18.up.railway.app`), removed edit/update functionality for expense types |
 
 

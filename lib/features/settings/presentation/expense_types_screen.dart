@@ -35,10 +35,10 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
     super.dispose();
   }
 
-  void _showAddEditDialog({ExpenseTypeModel? existingItem}) {
+  void _showAddDialog() {
     showDialog(
       context: context,
-      builder: (ctx) => _AddEditExpenseTypeDialog(existingItem: existingItem),
+      builder: (ctx) => const _AddExpenseTypeDialog(),
     );
   }
 
@@ -82,7 +82,7 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddEditDialog(),
+        onPressed: _showAddDialog,
         backgroundColor: AppColors.primary,
         elevation: 4,
         icon: const PhosphorIcon(
@@ -252,17 +252,6 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
               ),
             ),
           ),
-
-          // Edit Button (PUT /expensetype/{id})
-          IconButton(
-            onPressed: () => _showAddEditDialog(existingItem: item),
-            icon: const PhosphorIcon(
-              PhosphorIconsRegular.pencilSimple,
-              size: 20,
-              color: AppColors.slate600,
-            ),
-            tooltip: 'Edit Type',
-          ),
         ],
       ),
     );
@@ -388,27 +377,24 @@ class _ExpenseTypesScreenState extends ConsumerState<ExpenseTypesScreen> {
   }
 }
 
-/// Dedicated Add/Edit Dialog with isolated lifecycle
-class _AddEditExpenseTypeDialog extends ConsumerStatefulWidget {
-  final ExpenseTypeModel? existingItem;
-
-  const _AddEditExpenseTypeDialog({this.existingItem});
+/// Dedicated Add Dialog with isolated lifecycle
+class _AddExpenseTypeDialog extends ConsumerStatefulWidget {
+  const _AddExpenseTypeDialog();
 
   @override
-  ConsumerState<_AddEditExpenseTypeDialog> createState() =>
-      _AddEditExpenseTypeDialogState();
+  ConsumerState<_AddExpenseTypeDialog> createState() =>
+      _AddExpenseTypeDialogState();
 }
 
-class _AddEditExpenseTypeDialogState
-    extends ConsumerState<_AddEditExpenseTypeDialog> {
+class _AddExpenseTypeDialogState
+    extends ConsumerState<_AddExpenseTypeDialog> {
   late final TextEditingController _nameController;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController =
-        TextEditingController(text: widget.existingItem?.name ?? '');
+    _nameController = TextEditingController();
   }
 
   @override
@@ -427,22 +413,11 @@ class _AddEditExpenseTypeDialogState
     setState(() => _isSaving = true);
 
     try {
-      if (widget.existingItem != null) {
-        // Calls PUT /expensetype/{id}
-        await ref.read(expenseTypesProvider.notifier).updateType(
-              widget.existingItem!.id,
-              text,
-            );
-        if (!mounted) return;
-        Navigator.of(context).pop();
-        AppSnackBar.showSuccess(context, 'Expense type updated successfully!');
-      } else {
-        // Calls POST /expensetype
-        await ref.read(expenseTypesProvider.notifier).createType(text);
-        if (!mounted) return;
-        Navigator.of(context).pop();
-        AppSnackBar.showSuccess(context, 'Expense type created successfully!');
-      }
+      // Calls POST /expensetype
+      await ref.read(expenseTypesProvider.notifier).createType(text);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      AppSnackBar.showSuccess(context, 'Expense type created successfully!');
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -452,8 +427,6 @@ class _AddEditExpenseTypeDialogState
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.existingItem != null;
-
     return Dialog(
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
@@ -470,7 +443,7 @@ class _AddEditExpenseTypeDialogState
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  isEditing ? 'Edit Expense Type' : 'Add Expense Type',
+                  'Add Expense Type',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -579,7 +552,7 @@ class _AddEditExpenseTypeDialogState
                             ),
                           )
                         : Text(
-                            isEditing ? 'Save Changes' : 'Create Type',
+                            'Create Type',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,

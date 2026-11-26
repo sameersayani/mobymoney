@@ -11,7 +11,7 @@ abstract class AppConstants {
     if (dotenv.isInitialized && dotenv.env['API_BASE_URL'] != null) {
       return dotenv.env['API_BASE_URL']!;
     }
-    return 'https://expensemanager-0ac3.onrender.com';
+    return 'https://expensemanager-production-a247ca18.up.railway.app';
   }
 
   // Render free-tier cold-starts take 30-60 s; 60 s gives it a real chance.

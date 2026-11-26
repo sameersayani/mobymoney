@@ -124,7 +124,7 @@
     <tr><td><b>Analytics Screen</b></td><td><code>/analytics</code> (Tab 2)</td><td>Donut category split chart, 7-day spending bar chart, cumulative trend angle, and monthly comparison.</td></tr>
     <tr><td><b>AI Hub / Chat</b></td><td><code>/ai-chat</code> (Tab 3)</td><td>Conversational financial AI with real-time streaming, smart prompt chips, inline expense parsing, and one-tap save/dismiss.</td></tr>
     <tr><td><b>Settings Screen</b></td><td><code>/settings</code></td><td>Profile management, active currency selector dialog (5 currencies), CSV/XLSX export, and cache management.</td></tr>
-    <tr><td><b>Expense Types</b></td><td><code>/settings/expense-types</code></td><td>Custom category management with dynamic color palettes and Phosphor icons.</td></tr>
+    <tr><td><b>Expense Types</b></td><td><code>/settings/expense-types</code></td><td>Custom category management with dynamic color palettes and Phosphor icons (creation &amp; viewing; edit/update functionality removed).</td></tr>
     <tr><td><b>Add Expense Dialog</b></td><td>Modal Sheet</td><td>Creation and editing sheet with 5-currency selector (auto-persisting last selected currency), automatic unit price calculation, and date picker.</td></tr>
     <tr><td><b>Offline Overlay</b></td><td>System Overlay</td><td>Non-blocking network guard powered by pure Dart DNS socket heartbeats to ensure zero app crashes.</td></tr>
   </tbody>
@@ -170,6 +170,7 @@
     <tr><td>PUT</td><td><code>/dailyexpense/{id}</code></td><td>Updates an existing expense record with modified fields.</td></tr>
     <tr><td>DELETE</td><td><code>/dailyexpense/{id}</code></td><td>Permanently removes the specified expense item from the user's ledger.</td></tr>
     <tr><td>GET</td><td><code>/expensetype</code></td><td>Retrieves available expense categories with assigned metadata, icons, and colors.</td></tr>
+    <tr><td>POST</td><td><code>/expensetype</code></td><td>Creates a new expense category. <i>(Note: Edit/update functionality has been removed).</i></td></tr>
     <tr><td>GET</td><td><code>/chart-data</code></td><td>Provides multi-series time-series and categorical aggregates for analytics charts.</td></tr>
     <tr><td>GET</td><td><code>/download-report</code></td><td>Generates and exports downloadable financial report.</td></tr>
     <tr><td>POST</td><td><code>/delete-expenses</code></td><td>Bulk deletes expenses for the authenticated user.</td></tr>

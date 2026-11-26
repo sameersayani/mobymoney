@@ -39,6 +39,8 @@ class ExpenseTypesNotifier extends AsyncNotifier<List<ExpenseTypeModel>> {
   }
 
   /// PUT /expensetype/{id}
+  /// Note: Edit/update functionality for expense types has been removed from the app UI.
+  @Deprecated('Edit/update functionality for expense types has been removed')
   Future<void> updateType(int id, String name) async {
     final repository = ref.read(expenseTypeRepositoryProvider);
     await repository.updateExpenseType(id, name);

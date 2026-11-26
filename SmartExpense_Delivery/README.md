@@ -80,7 +80,15 @@ The documentation files cover:
 - **iOS**: Portrait orientation locked, `CADisableMinimumFrameDurationOnPhone = true` (120Hz ProMotion enabled)
 
 ### 2. Environment Setup
-Ensure a `.env` file exists in the project root:
+Copy `.env.example` to create your local `.env` file:
+```bash
+# Windows
+copy .env.example .env
+
+# macOS / Linux
+cp .env.example .env
+```
+Ensure the `.env` file contains:
 ```env
 API_BASE_URL=https://expensemanager-production-a247ca18.up.railway.app
 GOOGLE_SERVER_CLIENT_ID=<your-web-client-id>.apps.googleusercontent.com

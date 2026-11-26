@@ -30,7 +30,16 @@ AppConfig.aiChat;            // '/api/ai/chat'
 - **Git**
 
 ### 2. Environment File Setup
-Create or verify a `.env` file in the project root directory (`mobymoney/.env`):
+Create a `.env` file from the example template:
+```bash
+# Windows (CMD / PowerShell)
+copy .env.example .env
+
+# macOS / Linux
+cp .env.example .env
+```
+
+Or verify `.env` matches:
 ```env
 API_BASE_URL=https://expensemanager-production-a247ca18.up.railway.app
 GOOGLE_SERVER_CLIENT_ID=<your-google-web-client-id>.apps.googleusercontent.com
